@@ -1,4 +1,4 @@
-// CapCut 언어 복제 — 화면. 빌드 없음: 고치고 새로고침하면 끝.
+// CapCut Translate — 화면. 빌드 없음: 고치고 새로고침하면 끝.
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 

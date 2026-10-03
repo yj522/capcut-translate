@@ -1,4 +1,4 @@
-"""CapCut 언어 복제 — 로컬 전용 앱. 실행: python app.py (외부 패키지 없음)
+"""CapCut Translate — 로컬 전용 앱. 실행: python app.py (외부 패키지 없음)
 
 - 브라우저 화면(ui/) + 이 파일의 JSON API. 127.0.0.1 에만 열린다.
 - .py 를 저장하면 서버가 저절로 다시 뜬다(감시 프로세스). ui/ 는 새로고침만.
@@ -289,7 +289,7 @@ class Handler(BaseHTTPRequestHandler):
 # ─── 실행 + 저장하면 다시 뜨기 ─────────────────────────────────────────────
 def serve():
     httpd = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
-    print(f"CapCut 언어 복제 — http://127.0.0.1:{PORT}  (끄려면 이 창을 닫거나 Ctrl+C)", flush=True)
+    print(f"CapCut Translate — http://127.0.0.1:{PORT}  (끄려면 이 창을 닫거나 Ctrl+C)", flush=True)
     httpd.serve_forever()
 
 

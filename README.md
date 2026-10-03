@@ -1,4 +1,4 @@
-# CapCut 언어 복제
+# CapCut Translate
 
 CapCut 프로젝트를 **통째로 복제**하면서 화면 글자(텍스트·자동 자막)를 다른 언어로 바꾼다.
 원본은 건드리지 않는다. Windows·macOS 둘 다, 혼자 로컬에서 쓰는 도구.
