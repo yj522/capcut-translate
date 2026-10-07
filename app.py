@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import threading
@@ -18,7 +19,7 @@ import uuid
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import unquote, urlparse
+from urllib.parse import parse_qs, quote, unquote, urlparse
 
 HERE = Path(__file__).parent
 for _s in (sys.stdout, sys.stderr):  # Windows 콘솔(cp949)에서 한글·기호 출력으로 죽지 않게
@@ -31,6 +32,7 @@ sys.path.insert(0, str(HERE))
 import drafts  # noqa: E402
 import fonts  # noqa: E402
 import localize  # noqa: E402
+import pearl  # noqa: E402
 import translate  # noqa: E402
 import tts  # noqa: E402
 
@@ -332,14 +334,25 @@ def api(method: str, path: str, body: dict):
                 "has_key": bool(s.get("openai_api_key")), "openai_model": s.get("openai_model") or "gpt-4.1-mini",
                 "name_pattern": s.get("name_pattern") or "{name} [{lang}]",
                 "has_typecast": bool(tts.api_key(s)), "typecast_model": tts.model(s),
+                "has_codex_token": bool(s.get("codex_token")),
+                "pearl_user": s.get("pearl_user") if s.get("pearl_token") else None,
+                "pearl_server": pearl.server(s),
+                "codex_model": s.get("codex_model") or "", "codex_effort": s.get("codex_effort") or "",
                 "languages": [{"code": k, "label": translate.LANGUAGE_LABELS[k]} for k in translate.LANGUAGES],
                 "platform": sys.platform}
 
     if parts == ["settings"] and method == "POST":
         if "auto_fit" in body:  # 켜고 끄는 값은 문자열이 아니라서 따로
             s["auto_fit"] = bool(body.pop("auto_fit"))
-        for k in ("draft_root", "openai_api_key", "openai_model", "name_pattern", "codex_model",
-                  "typecast_api_key", "typecast_model", "tts_lufs", "tts_max_speed"):
+        if (body.get("codex_token") or "").strip():  # 저장하면서 이 PC 의 codex 도 바로 로그인시킨다
+            try:
+                translate.codex_login(body["codex_token"])
+            except RuntimeError as e:
+                raise ApiError(400, str(e)) from e
+        if body.get("codex_effort", "") not in ("", "low", "medium", "high", "xhigh"):
+            raise ApiError(400, "추론 강도는 low·medium·high·xhigh 중 하나입니다.")
+        for k in ("draft_root", "openai_api_key", "openai_model", "name_pattern", "codex_model", "codex_effort",
+                  "codex_token", "pearl_server", "typecast_api_key", "typecast_model", "tts_lufs", "tts_max_speed"):
             if k in body:
                 v = (body[k] or "").strip()
                 if v:
@@ -350,6 +363,21 @@ def api(method: str, path: str, body: dict):
             raise ApiError(400, "그 경로에 폴더가 없습니다.")
         save(SETTINGS_PATH, s)
         return {"ok": True}
+
+    if parts == ["pearl"]:  # 토큰이 아직 살아 있는지 포털에 물어본다(몇 초 걸려 state 와 따로)
+        if not s.get("pearl_token"):
+            return {"logged_in": False}
+        user = pearl.me(s)
+        return {"logged_in": bool(user), "user": user, "expired": not user}
+
+    if parts == ["pearl", "logout"] and method == "POST":
+        s.pop("pearl_token", None)
+        s.pop("pearl_user", None)
+        save(SETTINGS_PATH, s)
+        return {"ok": True}
+
+    if parts == ["codex"]:  # 로그인 확인은 몇 초 걸려 4초마다 부르는 state 와 따로 둔다
+        return {"installed": bool(shutil.which("codex")), "status": translate.codex_status()}
 
     if parts == ["projects"]:
         r = root()
@@ -464,9 +492,32 @@ class Handler(BaseHTTPRequestHandler):
     def _json(self, status: int, data):
         self._send(status, json.dumps(data, ensure_ascii=False).encode("utf-8"), "application/json; charset=utf-8")
 
+    def _redirect(self, url: str):
+        self.send_response(302)
+        self.send_header("Location", url)
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+
+    def _pearl_auth(self, path: str):
+        """Pearl Studio 로그인 — /auth/login 은 포털로 보내고, /auth/callback 은 code 를 토큰으로 바꾼다."""
+        s = settings()
+        if path == "/auth/login":
+            return self._redirect(pearl.login_url(s, f"http://127.0.0.1:{PORT}/auth/callback"))
+        q = parse_qs(urlparse(self.path).query)
+        try:
+            token, user = pearl.exchange(s, (q.get("code") or [""])[0], (q.get("state") or [""])[0])
+        except Exception as e:  # noqa: BLE001
+            return self._redirect("/?login_error=" + quote(str(e)[:200]))
+        s["pearl_token"] = token
+        s["pearl_user"] = {k: user.get(k) for k in ("id", "username", "role")}
+        save(SETTINGS_PATH, s)
+        self._redirect("/?login=ok")
+
     def _handle(self, method: str):
         path = urlparse(self.path).path
         try:
+            if path in ("/auth/login", "/auth/callback") and method == "GET":
+                return self._pearl_auth(path)
             if path.startswith("/api/"):
                 body = {}
                 if method == "POST":

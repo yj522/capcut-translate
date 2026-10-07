@@ -16,6 +16,8 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+import pearl
+
 LANGUAGES: dict[str, str] = {
     "en": "English", "ja": "Japanese", "zh": "Chinese (Simplified)", "zh-TW": "Chinese (Traditional)",
     "es": "Spanish", "fr": "French", "de": "German", "pt": "Portuguese", "ru": "Russian",
@@ -34,6 +36,26 @@ SYSTEM = (
     "and slang where it fits. Keep the tone and vibe, keep it short and punchy for on-screen text. "
     "Return ONLY valid JSON."
 )
+# 자연스럽게 바꾸되 놓치면 안 되는 것 — 일본어판 검토(2026-10)에서 지적된 유형을 규칙으로 남겼다
+FIDELITY = (
+    "NATURAL BUT FAITHFUL — while rewriting naturally, never lose these:\n"
+    "- Who does what: keep the subject and the action. e.g. '다이소에 파는 건데' = 'it is SOLD at Daiso' "
+    "(not 'I bought it'); do not swap selling/buying, giving/receiving, doing/being done.\n"
+    "- Intensity: keep intensifiers and emphasis (너무, 진짜, 완전, 엄청 …) with a natural equivalent — "
+    "'너무 예쁘다고요?' must stay emphatic, not a flat 'cute, right?'.\n"
+    "- Precision: do not make a word more specific or more vague than the source "
+    "(질감 = texture, 광택감 = gloss — keep whichever was said).\n"
+    "- Quantity/frequency: '많이' (a lot / often), '두 가지 모두' (both of the two), numbers, shade numbers "
+    "and product names stay exact.\n"
+    "- Connectives: a caption that ends mid-sentence (…인데, …하고, …해서) must end so it still flows into the "
+    "next caption (e.g. Japanese …なんだけど / …して), not as a closed statement.\n"
+    "- Speaker's tone: casual stays casual, polite stays polite.\n\n"
+)
+LANG_NOTES: dict[str, str] = {
+    "ja": ("JAPANESE NOTES — sound like a Japanese beauty/lifestyle short (TikTok/Reels JP): "
+           "keep emphasis with すごく / めっちゃ / ほんと / 〜すぎ; '-인데' mid-sentence → 〜なんだけど / 〜で; "
+           "'파는' → 売ってる; brand names in their official Japanese/Latin form.\n\n"),
+}
 BATCH_SIZE = 150  # 한 번에 크게 보내야 영상 전체의 용어·톤이 맞는다
 
 DATA_DIR = Path(__file__).parent / "data"
@@ -60,12 +82,33 @@ def save_entries(lang: str, pairs: dict[str, str]) -> None:
 
 
 # ─── 엔진 ──────────────────────────────────────────────────────────────────
-def engine_name(settings: dict) -> str:
+def local_engine(settings: dict) -> str:
+    """이 PC 에서 돌릴 수 있는 엔진(서버 실패 때 대신 쓴다)."""
     if settings.get("openai_api_key") or os.environ.get("OPENAI_API_KEY"):
         return "openai-api"
     if shutil.which("codex"):
         return "codex-cli"
     return "none"
+
+
+def engine_name(settings: dict) -> str:
+    if settings.get("pearl_token"):
+        return "pearlstudio"
+    return local_engine(settings)
+
+
+def _call(prompt: str, settings: dict) -> str:
+    """Pearl Studio 서버(로그인돼 있으면) → 실패하면 이 PC 의 OpenAI API 키 → codex CLI."""
+    if settings.get("pearl_token"):
+        try:
+            return pearl.call_llm(prompt, SYSTEM, settings)
+        except Exception as e:  # noqa: BLE001 — 서버가 안 되면 이 PC 엔진으로 계속
+            if local_engine(settings) == "none":
+                raise
+            print(f"[translate] Pearl Studio 서버 실패, 이 PC 엔진으로 대신: {e}", flush=True)
+    if local_engine(settings) == "openai-api":
+        return _call_openai_api(prompt, settings)
+    return _call_codex_cli(prompt, settings)
 
 
 def _call_openai_api(prompt: str, settings: dict) -> str:
@@ -99,17 +142,51 @@ def _call_codex_cli(prompt: str, settings: dict) -> str:
                "--color", "never", "-o", out_path, "-"]
         if settings.get("codex_model"):
             cmd[2:2] = ["-m", settings["codex_model"]]
-        r = subprocess.run(cmd, input=f"{SYSTEM}\n\n{prompt}", capture_output=True, text=True,
-                           encoding="utf-8", errors="replace", timeout=600, cwd=tempfile.gettempdir())
-        content = Path(out_path).read_text(encoding="utf-8", errors="replace")
-        if r.returncode != 0 or not content.strip():
+        if settings.get("codex_effort"):  # ~/.codex/config.toml 의 추론 강도를 이 앱에서만 덮어쓴다
+            cmd[2:2] = ["-c", f'model_reasoning_effort="{settings["codex_effort"]}"']
+        for attempt in (1, 2):
+            r = subprocess.run(cmd, input=f"{SYSTEM}\n\n{prompt}", capture_output=True, text=True,
+                               encoding="utf-8", errors="replace", timeout=600, cwd=tempfile.gettempdir())
+            content = Path(out_path).read_text(encoding="utf-8", errors="replace")
+            if r.returncode == 0 and content.strip():
+                return content
+            # 로그인이 풀려 실패했으면 설정에 저장한 토큰으로 다시 로그인하고 한 번 더
+            if attempt == 1 and settings.get("codex_token") and not codex_status().lower().startswith("logged in"):
+                codex_login(settings["codex_token"])
+                continue
             raise RuntimeError(f"codex CLI 실패(code={r.returncode}): {r.stderr[-400:]}")
-        return content
     finally:
         try:
             os.remove(out_path)
         except OSError:
             pass
+
+
+def codex_status() -> str:
+    """«codex login status» 결과 한 줄(예: Logged in using ChatGPT). codex 가 없으면 빈 문자열."""
+    codex = shutil.which("codex")
+    if not codex:
+        return ""
+    try:
+        r = subprocess.run([codex, "login", "status"], capture_output=True, text=True,
+                           encoding="utf-8", errors="replace", timeout=20)
+    except (OSError, subprocess.TimeoutExpired):
+        return "확인 실패"
+    lines = ((r.stdout or "") + (r.stderr or "")).strip().splitlines()
+    return lines[-1] if lines else "로그인 안 됨"
+
+
+def codex_login(token: str) -> str:
+    """토큰으로 codex 에 로그인한다(codex login --with-access-token). 토큰은 codex 가 ~/.codex 에 보관하고
+    이 앱 설정에는 남기지 않는다. 성공하면 로그인 상태 문자열을 돌려준다."""
+    codex = shutil.which("codex")
+    if not codex:
+        raise RuntimeError("codex CLI 가 없습니다. 먼저 «npm install -g @openai/codex» 로 설치하세요.")
+    r = subprocess.run([codex, "login", "--with-access-token"], input=token.strip(), capture_output=True,
+                       text=True, encoding="utf-8", errors="replace", timeout=60)
+    if r.returncode != 0:
+        raise RuntimeError(f"codex 토큰 로그인 실패: {(r.stderr or r.stdout).strip()[-300:]}")
+    return codex_status()
 
 
 def _parse_json(text: str) -> dict:
@@ -136,12 +213,13 @@ def _translate_batch(texts: list[str], lang: str, settings: dict, glossary: dict
         "items so the whole video flows naturally. Keep the same meaning and length feel (short & punchy). "
         "Keep the SAME order and SAME number of items, do not merge or split, keep line breaks (\\n). "
         "Keep emoji as they are.\n\n"
+        f"{FIDELITY}"
+        f"{LANG_NOTES.get(lang, '')}"
         f"{gloss}"
         f"INPUT (JSON array):\n{json.dumps(texts, ensure_ascii=False)}\n\n"
         'OUTPUT (JSON only): {"items":["<localized 1>","<localized 2>", ...]}'
     )
-    call = _call_openai_api if engine_name(settings) == "openai-api" else _call_codex_cli
-    items = _parse_json(call(prompt, settings)).get("items")
+    items = _parse_json(_call(prompt, settings)).get("items")
     if not isinstance(items, list) or len(items) != len(texts):
         raise RuntimeError(f"번역 개수 불일치(요청 {len(texts)}, 응답 {len(items) if isinstance(items, list) else '없음'})")
     return [str(x) for x in items]
@@ -239,9 +317,8 @@ def split_sentence(sentence: str, fragments: list[str], lang: str, settings: dic
             "Do NOT change, add, drop or reorder any character — joined together they must equal the sentence. "
             'OUTPUT (JSON only): {"parts":["...", "..."]}'
         )
-        call = _call_openai_api if engine_name(settings) == "openai-api" else _call_codex_cli
         try:
-            got = _parse_json(call(prompt, settings)).get("parts")
+            got = _parse_json(_call(prompt, settings)).get("parts")
             if isinstance(got, list) and len(got) == len(fragments) and squash(got) == squash([sentence]) \
                     and all(str(x).strip() for x in got):
                 parts = [str(x).strip() for x in got]
@@ -274,9 +351,8 @@ def shorten_to_fit(source: str, current: str, lang: str, max_chars: int, max_lin
         "Keep the key meaning, names and the hook. Prefer shorter native wording over cutting meaning. "
         'OUTPUT (JSON only): {"text": "..."}'
     )
-    call = _call_openai_api if engine_name(settings) == "openai-api" else _call_codex_cli
     try:
-        out = str(_parse_json(call(prompt, settings)).get("text") or "").strip()
+        out = str(_parse_json(_call(prompt, settings)).get("text") or "").strip()
     except Exception:  # noqa: BLE001
         return None
     lines = [x.strip() for x in out.split("\n") if x.strip()]

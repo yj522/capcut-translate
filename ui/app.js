@@ -59,7 +59,8 @@ async function loadState() {
   S.state = await api("state");
   const running = S.state.capcut_running;
   setPill($("#capcutPill"), running ? "warn" : "ok", running ? "CapCut 켜짐 — 닫아야 만들 수 있음" : "CapCut 꺼짐");
-  const eng = { "openai-api": ["", "번역: OpenAI API"], "codex-cli": ["", "번역: codex CLI"], none: ["bad", "번역 엔진 없음 — 설정 필요"] }[S.state.engine];
+  const eng = { pearlstudio: ["ok", `번역: Pearl Studio${S.state.pearl_user ? " · " + S.state.pearl_user.username : ""}`],
+    "openai-api": ["", "번역: OpenAI API"], "codex-cli": ["", "번역: codex CLI"], none: ["bad", "번역 엔진 없음 — 설정 필요"] }[S.state.engine];
   setPill($("#enginePill"), eng[0], eng[1]);
   if (!prev) renderDetail();
   else if (prev.capcut_running !== running || prev.engine !== S.state.engine) renderActionbar();
@@ -502,6 +503,24 @@ function openSettings() {
   f.typecast_api_key.value = "";
   f.typecast_api_key.placeholder = S.state.has_typecast ? "저장됨 — 바꾸려면 새 키 입력" : "Typecast 개발자 콘솔에서 발급";
   f.typecast_model.value = S.state.typecast_model;
+  f.codex_token.value = "";
+  f.codex_token.placeholder = S.state.has_codex_token ? "저장됨 — 바꾸려면 새 토큰 입력" : "codex 액세스 토큰";
+  f.codex_model.value = S.state.codex_model;
+  f.codex_effort.value = S.state.codex_effort;
+  $("#codexHint").textContent = "codex 로그인 상태 확인 중…";
+  api("codex").then((c) => {
+    $("#codexHint").textContent = !c.installed ? "codex CLI 가 없습니다 — npm install -g @openai/codex"
+      : `지금: ${c.status}. 저장한 토큰은 로그인이 풀리면 번역할 때 자동으로 다시 씁니다.`;
+  }).catch(() => { $("#codexHint").textContent = "codex 상태를 확인하지 못했습니다."; });
+  f.pearl_server.value = S.state.pearl_server;
+  $("#pearlHint").textContent = "확인 중…";
+  $("#pearlLogin").hidden = false; $("#pearlLogout").hidden = true;
+  api("pearl").then((p) => {
+    $("#pearlHint").textContent = p.logged_in ? `${p.user.username} (${p.user.role}) 로 로그인됨`
+      : p.expired ? "로그인이 만료됐습니다. 다시 로그인하세요." : "로그인하지 않음 — 이 PC 엔진으로 번역합니다.";
+    $("#pearlLogin").textContent = p.logged_in ? "다시 로그인" : "로그인";
+    $("#pearlLogout").hidden = !S.state.pearl_user;
+  }).catch(() => { $("#pearlHint").textContent = "Pearl Studio 서버에 연결하지 못했습니다."; });
   $("#rootHint").textContent = "자동으로 찾는 곳: " + S.state.candidates.join("  ·  ");
   $("#settingsModal").hidden = false;
   f.draft_root.focus();
@@ -607,7 +626,8 @@ $("#settingsForm").onsubmit = async (e) => {
   e.preventDefault();
   const f = e.target;
   const body = { draft_root: f.draft_root.value, openai_model: f.openai_model.value, name_pattern: f.name_pattern.value,
-    typecast_model: f.typecast_model.value };
+    typecast_model: f.typecast_model.value, pearl_server: f.pearl_server.value, codex_model: f.codex_model.value, codex_effort: f.codex_effort.value };
+  if (f.codex_token.value.trim()) body.codex_token = f.codex_token.value;
   if (f.typecast_api_key.value.trim()) body.typecast_api_key = f.typecast_api_key.value;
   if (f.openai_api_key.value.trim()) body.openai_api_key = f.openai_api_key.value;
   try {
@@ -621,7 +641,19 @@ $("#settingsForm").onsubmit = async (e) => {
 // CapCut 켜짐/꺼짐은 계속 확인(창이 보일 때만).
 setInterval(() => { if (!document.hidden) loadState().catch(() => {}); }, 4000);
 
+$("#pearlLogin").onclick = () => { location.href = "/auth/login"; };
+$("#pearlLogout").onclick = async () => {
+  try { await api("pearl/logout", {}); await loadState(); openSettings(); toast("로그아웃했습니다."); }
+  catch (er) { toast(er.message, true); }
+};
+
 (async () => {
+  const q = new URLSearchParams(location.search);  // Pearl Studio 로그인에서 돌아온 경우
+  if (q.has("login") || q.has("login_error")) {
+    history.replaceState(null, "", "/");
+    if (q.get("login") === "ok") toast("Pearl Studio 에 로그인했습니다. 이제 번역은 서버가 합니다.");
+    else toast("로그인 실패: " + q.get("login_error"), true);
+  }
   try { await loadState(); await loadProjects(); renderDetail(); }
   catch (e) { toast("서버에 연결하지 못했습니다: " + e.message, true); }
 })();

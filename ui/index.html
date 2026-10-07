@@ -58,6 +58,18 @@
   <div id="settingsModal" class="modal" hidden>
     <form id="settingsForm" class="card wide">
       <h2>설정</h2>
+      <div class="pearl-login">
+        <div>
+          <strong>Pearl Studio 로그인</strong>
+          <span id="pearlHint" class="hint">확인 중…</span>
+        </div>
+        <button id="pearlLogin" type="button" class="primary">로그인</button>
+        <button id="pearlLogout" type="button" class="ghost" hidden>로그아웃</button>
+      </div>
+      <label>Pearl Studio 서버
+        <input name="pearl_server" placeholder="https://www.pearlstudio.kr">
+        <span class="hint">로그인하면 번역을 이 서버(automaker)가 합니다. 서버가 안 되면 아래 이 PC 엔진으로 번역합니다.</span>
+      </label>
       <label>CapCut 프로젝트 폴더
         <input name="draft_root" placeholder="비워 두면 자동으로 찾습니다">
         <span id="rootHint" class="hint"></span>
@@ -68,6 +80,22 @@
       </label>
       <label>OpenAI 모델
         <input name="openai_model" placeholder="gpt-4.1-mini">
+      </label>
+      <label>codex 토큰
+        <input name="codex_token" type="password" autocomplete="off" placeholder="codex 액세스 토큰">
+        <span id="codexHint" class="hint">codex 로그인 상태 확인 중…</span>
+      </label>
+      <label>codex 모델
+        <input name="codex_model" placeholder="비워 두면 codex 기본 모델">
+      </label>
+      <label>codex 추론 강도
+        <select name="codex_effort">
+          <option value="">codex 기본값</option>
+          <option value="low">low — 빠름</option>
+          <option value="medium">medium</option>
+          <option value="high">high — 뉘앙스 좋음, 느림</option>
+          <option value="xhigh">xhigh — 가장 느림</option>
+        </select>
       </label>
       <label>Typecast API 키
         <input name="typecast_api_key" type="password" autocomplete="off">
