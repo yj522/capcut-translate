@@ -4,38 +4,53 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CapCut Translate</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header class="top">
-    <h1>CapCut Translate</h1>
-    <span id="capcutPill" class="pill">확인 중…</span>
-    <span id="enginePill" class="pill"></span>
+    <div class="brand">
+      <span class="logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M4 6h9M8.5 4v2c0 4-2 7-4.5 8.5M6 10c1 2.5 3.5 4.5 6 5.5" /><path d="M13 20l4-9 4 9M14.5 17h5" /></svg>
+      </span>
+      <h1>CapCut Translate</h1>
+    </div>
+    <div class="status">
+      <span id="capcutPill" class="pill"><i></i><span>확인 중…</span></span>
+      <span id="enginePill" class="pill"><i></i><span></span></span>
+    </div>
     <div class="spacer"></div>
-    <button id="btnRefresh" class="ghost" title="목록 새로고침">새로고침</button>
-    <button id="btnOpenRoot" class="ghost" title="CapCut 프로젝트 폴더 열기">폴더 열기</button>
-    <button id="btnSettings" class="ghost">설정</button>
+    <button id="btnRefresh" class="ghost icon-btn" title="목록 새로고침">
+      <svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7" /></svg><span>새로고침</span>
+    </button>
+    <button id="btnOpenRoot" class="ghost icon-btn" title="CapCut 프로젝트 폴더를 탐색기로 엽니다">
+      <svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></svg><span>프로젝트 폴더</span>
+    </button>
+    <button id="btnSettings" class="ghost icon-btn" title="설정">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /></svg><span>설정</span>
+    </button>
   </header>
 
   <main class="layout">
     <aside class="list">
-      <input id="search" type="search" placeholder="프로젝트 검색">
+      <label class="search">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
+        <input id="search" type="search" placeholder="프로젝트 검색">
+      </label>
+      <div id="listHead" class="list-head"></div>
       <div id="projects" class="projects"></div>
     </aside>
 
-    <section id="detail" class="detail">
-      <div class="empty">왼쪽에서 프로젝트를 고르세요.</div>
-    </section>
+    <section id="detail" class="detail"></section>
   </main>
 
   <!-- 진행 팝업 -->
   <div id="jobModal" class="modal" hidden>
-    <div class="card">
-      <h2 id="jobTitle">작업 중</h2>
+    <div class="card job">
+      <div class="job-top"><span class="spinner"></span><h2 id="jobTitle">작업 중</h2></div>
       <div id="jobLabel" class="job-label"></div>
       <div class="bar"><div id="jobBar"></div></div>
-      <div id="jobDetail" class="muted"></div>
-      <div id="jobElapsed" class="muted small"></div>
+      <div class="job-foot"><span id="jobDetail" class="muted small"></span><span id="jobElapsed" class="muted small"></span></div>
     </div>
   </div>
 
@@ -45,20 +60,29 @@
       <h2>설정</h2>
       <label>CapCut 프로젝트 폴더
         <input name="draft_root" placeholder="비워 두면 자동으로 찾습니다">
-        <span id="rootHint" class="muted small"></span>
+        <span id="rootHint" class="hint"></span>
       </label>
-      <label>OpenAI API 키 <span class="muted small">(비워 두면 codex CLI 로그인으로 번역 — 느림)</span>
-        <input name="openai_api_key" type="password" autocomplete="off" placeholder="sk-… (저장된 키는 다시 표시하지 않음)">
+      <label>OpenAI API 키
+        <input name="openai_api_key" type="password" autocomplete="off" placeholder="sk-…">
+        <span class="hint">비워 두면 codex CLI 로그인 세션으로 번역합니다(느림).</span>
       </label>
       <label>OpenAI 모델
         <input name="openai_model" placeholder="gpt-4.1-mini">
       </label>
-      <label>사본 이름 규칙 <span class="muted small">{name}=원래 이름, {lang}=언어 코드</span>
+      <label>Typecast API 키
+        <input name="typecast_api_key" type="password" autocomplete="off">
+        <span class="hint">글자 읽어주기 음성을 번역 언어로 새로 만들 때 씁니다(없으면 음성은 원래대로).</span>
+      </label>
+      <label>Typecast 모델
+        <input name="typecast_model" placeholder="ssfm-v30">
+      </label>
+      <label>사본 이름 규칙
         <input name="name_pattern" placeholder="{name} [{lang}]">
+        <span class="hint">{name} = 원래 이름, {lang} = 언어 코드</span>
       </label>
       <div class="row end">
         <button type="button" class="ghost" data-close>닫기</button>
-        <button type="submit">저장</button>
+        <button type="submit" class="primary">저장</button>
       </div>
     </form>
   </div>

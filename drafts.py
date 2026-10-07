@@ -100,11 +100,74 @@ def capcut_running() -> bool:
 
 def open_folder(p: Path) -> None:
     if IS_WIN:
-        os.startfile(str(p))  # noqa: S606
+        _open_folder_win(p)
     elif IS_MAC:
         subprocess.Popen(["open", str(p)])
     else:
         subprocess.Popen(["xdg-open", str(p)])
+
+
+def _open_folder_win(p: Path) -> bool:
+    """탐색기로 열고 그 창을 앞으로 가져온다. 돌려주는 값: 앞으로 왔는지.
+
+    서버는 백그라운드 프로세스라 그냥 열면 Windows 포그라운드 잠금 때문에 창이 브라우저 뒤에 숨는다.
+    → 새로 생긴 탐색기 창(없으면 같은 이름 창)을 찾아 현재 앞 창의 입력 스레드에 붙어 SetForegroundWindow.
+    """
+    import ctypes
+    from ctypes import wintypes
+    u32, k32 = ctypes.windll.user32, ctypes.windll.kernel32
+    u32.GetForegroundWindow.restype = wintypes.HWND
+    u32.GetWindowThreadProcessId.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.DWORD)]
+
+    def explorer_windows() -> dict[int, str]:
+        found: dict[int, str] = {}
+        proc = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+
+        def cb(hwnd, _):
+            cls = ctypes.create_unicode_buffer(64)
+            u32.GetClassNameW(hwnd, cls, 64)
+            if cls.value == "CabinetWClass" and u32.IsWindowVisible(hwnd):
+                title = ctypes.create_unicode_buffer(512)
+                u32.GetWindowTextW(hwnd, title, 512)
+                found[hwnd] = title.value
+            return True
+        u32.EnumWindows(proc(cb), 0)
+        return found
+
+    target = str(p.resolve())
+    before = explorer_windows()
+    subprocess.Popen(["explorer.exe", target], creationflags=0x08000000)
+
+    hwnd = None
+    for _ in range(40):  # 최대 4초
+        time.sleep(0.1)
+        now = explorer_windows()
+        new = [h for h in now if h not in before]
+        if new:
+            hwnd = new[0]
+            break
+    if not hwnd:  # 이미 열려 있던 창을 탐색기가 재사용한 경우 — 제목(폴더 이름 또는 전체 경로)으로 찾는다
+        hwnd = next((h for h, t in explorer_windows().items() if t in (p.name, target)), None)
+    if not hwnd:
+        return False
+
+    if u32.IsIconic(hwnd):
+        u32.ShowWindow(hwnd, 9)  # SW_RESTORE
+    fg = u32.GetForegroundWindow()
+    me = k32.GetCurrentThreadId()
+    other = u32.GetWindowThreadProcessId(fg, None) if fg else 0
+    attached = bool(other and other != me and u32.AttachThreadInput(me, other, True))
+    try:
+        u32.BringWindowToTop(hwnd)
+        u32.SetForegroundWindow(hwnd)
+    finally:
+        if attached:
+            u32.AttachThreadInput(me, other, False)
+    if u32.GetForegroundWindow() != hwnd:  # 그래도 막히면 Alt 키를 한 번 눌러 잠금을 푼다
+        u32.keybd_event(0x12, 0, 0, 0)
+        u32.keybd_event(0x12, 0, 2, 0)
+        u32.SetForegroundWindow(hwnd)
+    return u32.GetForegroundWindow() == hwnd
 
 
 # ─── 목록 ──────────────────────────────────────────────────────────────────
@@ -181,10 +244,12 @@ def new_draft_id() -> str:
     return str(uuid.uuid4()).upper()
 
 
-def clone(root: Path, src: Path, new_name: str, transform=None, progress=None) -> dict:
+def clone(root: Path, src: Path, new_name: str, transform=None, progress=None,
+          extra_files: dict[str, Path] | None = None) -> dict:
     """src 프로젝트를 root 아래 새 폴더로 복제한다. 원본은 읽기만 한다.
 
     transform(draft_dict) 가 주어지면 모든 본문 사본에 적용한다(번역 반영).
+    extra_files = {사본 폴더 안 상대경로: 원본 파일} 은 복사 뒤 넣는다(번역 음성 wav).
     임시 폴더에서 끝낸 뒤 이름을 바꾸므로 실패해도 반쯤 된 프로젝트가 남지 않는다.
     """
     step = progress or (lambda *_: None)
@@ -194,6 +259,9 @@ def clone(root: Path, src: Path, new_name: str, transform=None, progress=None) -
     try:
         step("copy", f"폴더 복사 중 · {src.name}")
         shutil.copytree(long_path(src), long_path(tmp))
+        for rel, f in (extra_files or {}).items():
+            (tmp / rel).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(long_path(f), long_path(tmp / rel))
 
         step("rewrite", "프로젝트 정보 다시 쓰는 중")
         old_fold = fwd(src)
@@ -236,6 +304,15 @@ def clone(root: Path, src: Path, new_name: str, transform=None, progress=None) -
                     continue  # JSON 이 아닌 사본(드물게 비어 있음)은 건너뜀
                 transform(data)
                 write_json(p, data)
+
+            # 음성이 길어 영상을 늘렸으면 목록에 보이는 길이도 맞춘다
+            try:
+                dur = int(read_json(main_content_path(tmp)).get("duration") or 0)
+            except Exception:
+                dur = 0
+            if dur and dur != meta.get("tm_duration"):
+                meta["tm_duration"] = dur
+                write_json(meta_p, meta)
 
         step("register", "CapCut 목록에 등록 중")
         os.rename(long_path(tmp), long_path(dest))

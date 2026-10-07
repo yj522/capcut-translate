@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CapCut Translate — 시안 D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap">
+<style>
+:root{
+  --primary:#1856FF; --primary-600:#0F45E0; --primary-50:rgba(24,86,255,.10);
+  --secondary:#3A344E;
+  --success:#07CA6B; --success-ink:#04804A;
+  --warning:#E89558; --warning-ink:#9A4D12;
+  --danger:#EA2143; --danger-ink:#B3122F;
+  --text:#141414; --text-2:#3A344E; --text-3:#5E5873;
+  --glass:rgba(255,255,255,.50);
+  --glass-strong:rgba(255,255,255,.68);
+  --glass-soft:rgba(255,255,255,.40);
+  --glass-line:rgba(255,255,255,.78);
+  --glass-edge:rgba(58,52,78,.10);
+  --blur:saturate(170%) blur(26px);
+  --r-xl:22px; --r-lg:16px; --r-md:12px; --r-sm:9px;
+  --shadow:0 1px 0 rgba(255,255,255,.9) inset, 0 18px 40px -18px rgba(30,40,110,.35), 0 2px 8px rgba(30,40,110,.06);
+  --font:"Plus Jakarta Sans","Pretendard Variable",Pretendard,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  font-family:var(--font); color:var(--text); font-size:14px; line-height:1.5;
+  background:#E8ECFB; overflow:hidden; word-break:keep-all; overflow-wrap:break-word;
+  -webkit-font-smoothing:antialiased;
+}
+/* luminous backdrop */
+.backdrop{position:fixed;inset:0;z-index:0;overflow:hidden;
+  background:
+   radial-gradient(1200px 700px at 8% -10%, #C9D6FF 0%, transparent 60%),
+   radial-gradient(900px 700px at 100% 110%, #FFD6EC 0%, transparent 60%),
+   linear-gradient(135deg,#E3E9FF 0%,#EFE7FF 50%,#E2F6FF 100%);}
+.blob{position:absolute;border-radius:50%;filter:blur(60px);opacity:.75}
+.b1{width:560px;height:560px;left:-120px;top:120px;background:radial-gradient(circle at 30% 30%,#5B8CFF,#1856FF 60%,transparent 72%)}
+.b2{width:460px;height:460px;right:6%;top:-140px;background:radial-gradient(circle,#B48CFF,#7C4DFF 55%,transparent 72%);opacity:.6}
+.b3{width:520px;height:520px;right:-120px;bottom:-160px;background:radial-gradient(circle,#FF8FC7,#FF5FA2 50%,transparent 72%);opacity:.55}
+.b4{width:380px;height:380px;left:38%;bottom:-160px;background:radial-gradient(circle,#4BE3B4,#07CA6B 50%,transparent 72%);opacity:.45}
+.grain{position:absolute;inset:0;opacity:.05;background-image:radial-gradient(#000 0.6px,transparent 0.6px);background-size:3px 3px}
+
+.glass{background:var(--glass);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  border:1px solid var(--glass-line);box-shadow:var(--shadow);border-radius:var(--r-xl);position:relative}
+.glass::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(160deg,rgba(255,255,255,.55),rgba(255,255,255,0) 38%);}
+.glass > *{position:relative}
+
+.app{position:relative;z-index:1;height:100vh;display:grid;grid-template-rows:64px 1fr;gap:14px;padding:14px 16px 30px}
+
+/* ── top bar ── */
+.topbar{display:flex;align-items:center;gap:14px;padding:0 14px 0 12px;border-radius:18px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:17px;letter-spacing:-.01em;white-space:nowrap}
+.logo{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;
+  background:linear-gradient(140deg,#4D7DFF,#1856FF 55%,#7C4DFF);box-shadow:0 6px 16px -4px rgba(24,86,255,.55),inset 0 1px 0 rgba(255,255,255,.5)}
+.logo svg{width:20px;height:20px}
+.brand small{display:block;font-size:11px;font-weight:500;color:var(--text-3);letter-spacing:0;margin-top:-2px}
+.divider-v{width:1px;height:26px;background:var(--glass-edge);margin:0 4px}
+.status{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 12px;border-radius:999px;font-size:12.5px;font-weight:600;
+  background:var(--glass-soft);border:1px solid var(--glass-line);color:var(--text-2);white-space:nowrap}
+.status .dot{width:8px;height:8px;border-radius:50%;background:var(--success);box-shadow:0 0 0 3px rgba(7,202,107,.18)}
+.status.ok{color:var(--success-ink);background:rgba(7,202,107,.12);border-color:rgba(7,202,107,.28)}
+.status b{font-family:var(--mono);font-weight:600;font-size:12px;color:var(--text)}
+.spacer{flex:1}
+.btn{font:inherit;display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 14px;border-radius:11px;cursor:pointer;
+  font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;
+  background:rgba(255,255,255,.62);border:1px solid var(--glass-line);box-shadow:0 1px 2px rgba(30,40,110,.08),inset 0 1px 0 #fff;transition:background .15s,transform .15s}
+.btn:hover{background:rgba(255,255,255,.85)}
+.btn:active{transform:translateY(1px)}
+.btn:focus-visible,.chip:focus-visible,.icon-btn:focus-visible,.cell:focus-visible,input:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.btn svg,.icon-btn svg{width:16px;height:16px;flex:none}
+.btn.sm{height:30px;padding:0 11px;font-size:12.5px;border-radius:9px}
+.btn.ghost{background:transparent;box-shadow:none;border-color:transparent;color:var(--text-2)}
+.btn.ghost:hover{background:rgba(255,255,255,.5)}
+.btn.tint{background:var(--primary-50);border-color:rgba(24,86,255,.22);color:var(--primary-600)}
+.icon-btn{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;cursor:pointer;border:1px solid transparent;background:transparent;color:var(--text-2)}
+.icon-btn:hover{background:rgba(255,255,255,.7);border-color:var(--glass-line)}
+.icon-btn.danger:hover{color:var(--danger-ink);background:rgba(234,33,67,.08)}
+
+/* ── body grid ── */
+.main{display:grid;grid-template-columns:340px 1fr;gap:14px;min-height:0}
+
+/* sidebar */
+.sidebar{display:flex;flex-direction:column;min-height:0;padding:14px 12px 12px}
+.search{display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;border-radius:12px;background:rgba(255,255,255,.7);border:1px solid var(--glass-line);box-shadow:inset 0 1px 2px rgba(30,40,110,.06)}
+.search svg{width:16px;height:16px;color:var(--text-3)}
+.search input{border:0;background:transparent;font:inherit;font-size:13.5px;flex:1;color:var(--text);outline:none}
+.search input::placeholder{color:var(--text-3)}
+.search kbd{font-family:var(--mono);font-size:11px;color:var(--text-3);border:1px solid var(--glass-edge);border-radius:6px;padding:1px 6px;background:rgba(255,255,255,.6)}
+.list-head{display:flex;align-items:center;justify-content:space-between;margin:14px 6px 8px;font-size:12px;font-weight:700;color:var(--text-3);letter-spacing:.02em}
+.list-head .sort{font-weight:600;color:var(--text-2);display:flex;align-items:center;gap:4px}
+.list{overflow:auto;flex:1;margin:0 -4px;padding:0 4px 4px;display:flex;flex-direction:column;gap:6px}
+.proj{display:flex;gap:11px;padding:9px;border-radius:14px;border:1px solid transparent;cursor:pointer;transition:background .15s}
+.proj:hover{background:rgba(255,255,255,.45)}
+.proj.selected{background:rgba(255,255,255,.88);border-color:rgba(24,86,255,.35);box-shadow:0 8px 22px -12px rgba(24,86,255,.55),inset 0 1px 0 #fff}
+.proj.selected::after{content:"";position:absolute}
+.thumb{width:44px;aspect-ratio:9/16;border-radius:8px;flex:none;background-size:cover;background-position:center;border:1px solid rgba(255,255,255,.8);box-shadow:0 3px 8px rgba(30,40,110,.15)}
+.proj-body{min-width:0;flex:1;display:flex;flex-direction:column;justify-content:center;gap:3px}
+.proj-name{font-weight:650;font-size:13.5px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--text)}
+.proj-meta{font-size:12px;color:var(--text-3);font-variant-numeric:tabular-nums}
+.badges{display:flex;gap:4px;margin-top:2px}
+.badge{font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:.03em;padding:1px 7px;border-radius:6px;line-height:18px;
+  background:var(--primary-50);color:var(--primary-600);border:1px solid rgba(24,86,255,.2)}
+.badge.ja{background:rgba(234,33,67,.08);color:var(--danger-ink);border-color:rgba(234,33,67,.2)}
+.badge.zh{background:rgba(232,149,88,.14);color:var(--warning-ink);border-color:rgba(232,149,88,.3)}
+.copy{margin-left:26px;padding:7px 9px;align-items:center;position:relative}
+.copy::before{content:"";position:absolute;left:-12px;top:-4px;width:10px;height:24px;border-left:1.5px solid rgba(58,52,78,.22);border-bottom:1.5px solid rgba(58,52,78,.22);border-bottom-left-radius:8px}
+.copy .thumb{width:26px}
+.copy .proj-name{font-size:12.5px;font-weight:550;-webkit-line-clamp:1}
+.side-foot{margin-top:10px;padding:10px 8px 2px;border-top:1px solid var(--glass-edge);font-size:11.5px;color:var(--text-3);display:flex;justify-content:space-between}
+.side-foot b{font-family:var(--mono);font-weight:500;color:var(--text-2)}
+
+/* detail */
+.detail{display:flex;flex-direction:column;min-height:0;overflow:hidden;padding:0}
+.scroll{overflow:auto;flex:1;padding:18px 20px 24px;display:flex;flex-direction:column;gap:14px;scrollbar-width:thin;scrollbar-color:rgba(58,52,78,.25) transparent}
+
+.hero{display:grid;grid-template-columns:118px 1fr;gap:18px;align-items:stretch}
+.cover{width:118px;aspect-ratio:9/16;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.9);box-shadow:0 14px 30px -12px rgba(30,40,110,.5)}
+.cover img{width:100%;height:100%;object-fit:cover;display:block}
+.hero-info{display:flex;flex-direction:column;min-width:0}
+.eyebrow{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text-3);font-weight:500}
+.eyebrow .pill{font-size:11px;font-weight:700;color:var(--primary-600);background:var(--primary-50);border:1px solid rgba(24,86,255,.2);padding:1px 8px;border-radius:999px}
+.eyebrow .sep{width:3px;height:3px;border-radius:50%;background:currentColor;opacity:.6}
+h1{font-size:22px;line-height:1.35;letter-spacing:-.02em;margin:6px 0 8px;font-weight:800;max-width:720px}
+.path{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12px;color:var(--text-3);margin-bottom:14px}
+.path svg{width:14px;height:14px;flex:none}
+.tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.tag{font-size:12px;font-weight:600;color:var(--text-2);padding:3px 10px;border-radius:999px;background:rgba(255,255,255,.55);border:1px solid var(--glass-line)}
+.hero-row{display:flex;gap:10px;align-items:stretch;margin-top:auto}
+.stat{flex:1;min-width:0;padding:10px 14px;border-radius:14px;background:rgba(255,255,255,.62);border:1px solid var(--glass-line);box-shadow:inset 0 1px 0 #fff}
+.stat .n{font-size:24px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.15}
+.stat .l{font-size:12px;color:var(--text-3);font-weight:600}
+.stat.accent .n{color:var(--primary)}
+.hero-row .btn{height:auto;align-self:stretch;padding:0 16px}
+
+.notice{display:flex;gap:10px;align-items:center;padding:10px 14px;border-radius:13px;font-size:13px;font-weight:500;color:#6E3A0E;
+  background:linear-gradient(90deg,rgba(255,226,198,.85),rgba(255,240,226,.6));border:1px solid rgba(232,149,88,.4)}
+.notice svg{width:18px;height:18px;color:var(--warning);flex:none}
+
+.card{background:var(--glass-strong);border:1px solid var(--glass-line);border-radius:18px;padding:16px 18px;box-shadow:0 10px 28px -18px rgba(30,40,110,.4),inset 0 1px 0 #fff}
+.card-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.step{width:26px;height:26px;border-radius:9px;display:grid;place-items:center;font-size:13px;font-weight:800;color:#fff;
+  background:linear-gradient(140deg,#4D7DFF,#1856FF);box-shadow:0 4px 10px -3px rgba(24,86,255,.6)}
+.card-head h2{font-size:15.5px;font-weight:750;margin:0;letter-spacing:-.01em}
+.card-head .hint{font-size:12.5px;color:var(--text-3)}
+.card-head .right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.count{font-size:12.5px;font-weight:700;color:var(--primary-600);background:var(--primary-50);padding:3px 10px;border-radius:999px}
+
+.chips{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
+.chip{font:inherit;display:flex;align-items:center;justify-content:space-between;gap:6px;height:38px;padding:0 10px 0 12px;border-radius:11px;cursor:pointer;
+  background:rgba(255,255,255,.6);border:1px solid rgba(58,52,78,.12);color:var(--text);font-size:13px;font-weight:600;text-align:left;transition:all .15s}
+.chip:hover{background:#fff;border-color:rgba(24,86,255,.35)}
+.chip .code{font-family:var(--mono);font-size:10.5px;font-weight:600;color:var(--text-3)}
+.chip .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip[aria-pressed="true"]{background:linear-gradient(140deg,#3D6CFF,#1856FF);border-color:#1856FF;color:#fff;box-shadow:0 6px 14px -6px rgba(24,86,255,.7),inset 0 1px 0 rgba(255,255,255,.35)}
+.chip[aria-pressed="true"] .code{color:rgba(255,255,255,.85)}
+
+.name-row{display:grid;grid-template-columns:minmax(0,340px) 1fr;gap:16px;align-items:start}
+.field{display:flex;align-items:center;height:40px;border-radius:11px;background:rgba(255,255,255,.85);border:1px solid rgba(58,52,78,.16);padding:0 12px;box-shadow:inset 0 1px 2px rgba(30,40,110,.06)}
+.field input{border:0;outline:none;background:transparent;font-family:var(--mono);font-size:13.5px;color:var(--text);flex:1;min-width:0}
+.field-help{font-size:12px;color:var(--text-3);margin-top:6px}
+.field-help code{font-family:var(--mono);font-size:11.5px;background:rgba(58,52,78,.07);padding:0 5px;border-radius:5px;color:var(--text-2)}
+.previews{display:flex;flex-direction:column;gap:6px}
+.pv{display:flex;align-items:center;gap:10px;min-height:40px;padding:6px 12px;border-radius:11px;background:rgba(255,255,255,.5);border:1px solid rgba(58,52,78,.08);font-size:13px}
+.pv .t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
+.warn-tag{flex:none;display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:650;color:var(--warning-ink);background:rgba(232,149,88,.16);border:1px solid rgba(232,149,88,.35);padding:2px 9px;border-radius:999px}
+.warn-tag svg{width:13px;height:13px}
+
+.progress-row{display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:center;margin-bottom:12px}
+.prog{padding:10px 14px;border-radius:13px;background:rgba(255,255,255,.55);border:1px solid rgba(58,52,78,.08)}
+.prog .top{display:flex;justify-content:space-between;font-size:13px;font-weight:650;margin-bottom:7px}
+.prog .top span:last-child{font-variant-numeric:tabular-nums;color:var(--text-2);font-weight:600}
+.prog .top .done{color:var(--success-ink)}
+.bar{height:7px;border-radius:99px;background:rgba(58,52,78,.10);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#4D7DFF,#1856FF)}
+.bar i.ok{background:linear-gradient(90deg,#3BE08F,#07CA6B)}
+.tools{display:flex;align-items:center;gap:10px}
+.check{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--text-2);cursor:pointer;white-space:nowrap}
+.check input{width:16px;height:16px;accent-color:var(--primary);margin:0}
+
+.table{border-radius:14px;overflow:hidden;border:1px solid rgba(58,52,78,.10);background:rgba(255,255,255,.45)}
+.tr{display:grid;grid-template-columns:44px minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);border-top:1px solid rgba(58,52,78,.08)}
+.tr:first-child{border-top:0}
+.th{background:rgba(255,255,255,.7);font-size:12px;font-weight:700;color:var(--text-3);letter-spacing:.02em}
+.th > div{padding:9px 12px;display:flex;align-items:center;gap:6px}
+.th .badge{font-size:10px}
+.td{padding:10px 12px;font-size:13px;line-height:1.55;white-space:pre-line}
+.td.no{color:var(--text-3);font-family:var(--mono);font-size:12px;font-weight:600;text-align:center;padding-top:13px}
+.td.src{color:var(--text-2)}
+.td.ed{padding:6px}
+.cell{display:block;min-height:100%;padding:6px 8px;border-radius:9px;border:1px solid rgba(58,52,78,.08);background:rgba(255,255,255,.55);white-space:pre-line;outline:none;transition:all .15s;color:var(--text)}
+.cell:hover{background:rgba(255,255,255,.75);border-color:rgba(58,52,78,.14)}
+.cell:focus{background:#fff;border-color:var(--primary);box-shadow:0 0 0 3px rgba(24,86,255,.15)}
+.cell.empty{border:1px dashed rgba(58,52,78,.25);background:rgba(255,255,255,.35);color:var(--text-3);font-style:normal;display:flex;align-items:center;gap:6px;min-height:34px}
+.cell.empty::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--warning)}
+.tr:hover .td{background:rgba(255,255,255,.18)}
+
+.copies .row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:13px;background:rgba(255,255,255,.55);border:1px solid rgba(58,52,78,.08)}
+.copies .thumb{width:30px}
+.copies .nm{flex:1;min-width:0;font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.copies .when{font-size:12.5px;color:var(--text-3);white-space:nowrap;font-variant-numeric:tabular-nums}
+.copies .acts{display:flex;gap:2px}
+
+/* sticky run bar */
+.runbar{flex:none;display:flex;align-items:center;gap:18px;padding:14px 16px 14px 22px;margin:0;
+  background:rgba(255,255,255,.72);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  border-top:1px solid rgba(255,255,255,.9);box-shadow:0 -12px 30px -18px rgba(30,40,110,.35)}
+.runbar .msg{flex:1;min-width:0;font-size:13.5px;color:var(--text-2);line-height:1.5}
+.runbar .msg b{color:var(--text)}
+.runbar .langs{display:flex;gap:4px;margin-bottom:2px}
+.cta{font:inherit;display:inline-flex;align-items:center;gap:10px;height:50px;padding:0 24px;border:0;border-radius:14px;cursor:pointer;
+  font-size:15.5px;font-weight:750;color:#fff;letter-spacing:-.01em;white-space:nowrap;
+  background:linear-gradient(135deg,#4D7DFF 0%,#1856FF 55%,#5A3BFF 100%);
+  box-shadow:0 12px 26px -10px rgba(24,86,255,.75),inset 0 1px 0 rgba(255,255,255,.4)}
+.cta:hover{filter:brightness(1.06)}
+.cta:focus-visible{outline:3px solid rgba(24,86,255,.45);outline-offset:3px}
+.cta svg{width:20px;height:20px}
+
+.label{position:fixed;right:16px;bottom:6px;z-index:5;font-size:11.5px;font-weight:650;color:var(--text-2);
+  background:rgba(255,255,255,.6);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--glass-line);padding:1px 10px;border-radius:999px}
+
+@media (max-width:1300px){.chips{grid-template-columns:repeat(5,minmax(0,1fr))}}
+</style>
+</head>
+<body>
+<div class="backdrop" aria-hidden="true"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div><div class="blob b4"></div><div class="grain"></div></div>
+
+<div class="app">
+  <!-- 상단 바 -->
+  <header class="topbar glass">
+    <div class="brand">
+      <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="13" height="14" rx="3"/><path d="M16 10l5-3v10l-5-3"/><path d="M7 10h5M9.5 10v5"/></svg></div>
+      <div>CapCut Translate<small>프로젝트 언어 복제</small></div>
+    </div>
+    <div class="divider-v"></div>
+    <span class="status ok" title="CapCut이 꺼져 있어 안전하게 복제할 수 있습니다"><span class="dot"></span>CapCut 꺼짐</span>
+    <span class="status"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 17l6-6-6-6M12 19h8"/></svg>번역: <b>codex CLI</b></span>
+    <div class="spacer"></div>
+    <button class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4L21 8"/><path d="M21 3v5h-5"/></svg>새로고침</button>
+    <button class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>프로젝트 폴더</button>
+    <button class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>설정</button>
+  </header>
+
+  <div class="main">
+    <!-- 사이드바 -->
+    <aside class="sidebar glass">
+      <label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input placeholder="프로젝트 이름으로 찾기"><kbd>Ctrl K</kbd></label>
+      <div class="list-head"><span>프로젝트 4 · 사본 3</span><span class="sort">최근 수정순 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg></span></div>
+      <div class="list">
+        <div class="proj selected" tabindex="0">
+          <div class="thumb" style="background-image:url(assets/cover.jpg)"></div>
+          <div class="proj-body">
+            <div class="proj-name">폼클렌징으로 브러시빨지 마세요!장윤주 메이크업 쌤의세척법</div>
+            <div class="proj-meta">9월 9일 오후 08:21 · 0:46</div>
+            <div class="badges"><span class="badge">EN</span></div>
+          </div>
+        </div>
+        <div class="proj copy" tabindex="0">
+          <div class="thumb" style="background-image:url(assets/cover.jpg)"></div>
+          <div class="proj-body"><div class="proj-name">폼클렌징으로 브러시빨지 마세요!장윤주 메이크업 쌤의세척법 [EN]</div></div>
+          <span class="badge">EN</span>
+        </div>
+
+        <div class="proj" tabindex="0">
+          <div class="thumb" style="background:linear-gradient(170deg,#FFC37A 0%,#FF7A59 40%,#2F4A3A 75%,#1C2A22 100%)"></div>
+          <div class="proj-body">
+            <div class="proj-name">여름 캠핑 브이로그 쇼츠</div>
+            <div class="proj-meta">9월 2일 오후 03:10 · 0:58</div>
+            <div class="badges"><span class="badge ja">JA</span></div>
+          </div>
+        </div>
+        <div class="proj copy" tabindex="0">
+          <div class="thumb" style="background:linear-gradient(170deg,#FFC37A 0%,#FF7A59 40%,#2F4A3A 75%,#1C2A22 100%)"></div>
+          <div class="proj-body"><div class="proj-name">여름 캠핑 브이로그 쇼츠 [JA]</div></div>
+          <span class="badge ja">JA</span>
+        </div>
+
+        <div class="proj" tabindex="0">
+          <div class="thumb" style="background:radial-gradient(circle at 50% 45%,#F6E7D2 0 18%,#B07A4F 19% 30%,#5A3A26 31% 100%)"></div>
+          <div class="proj-body">
+            <div class="proj-name">홈카페 라떼아트 3분 정리</div>
+            <div class="proj-meta">8월 27일 오전 11:42 · 3:04</div>
+            <div class="badges"><span class="badge zh">ZH</span></div>
+          </div>
+        </div>
+        <div class="proj copy" tabindex="0">
+          <div class="thumb" style="background:radial-gradient(circle at 50% 45%,#F6E7D2 0 18%,#B07A4F 19% 30%,#5A3A26 31% 100%)"></div>
+          <div class="proj-body"><div class="proj-name">홈카페 라떼아트 3분 정리 [ZH]</div></div>
+          <span class="badge zh">ZH</span>
+        </div>
+
+        <div class="proj" tabindex="0">
+          <div class="thumb" style="background:linear-gradient(180deg,#9FD8FF 0%,#CDEBC4 55%,#6FAE5C 100%)"></div>
+          <div class="proj-body">
+            <div class="proj-name">강아지 산책 루틴</div>
+            <div class="proj-meta">8월 19일 오후 07:05 · 0:32</div>
+            <div class="proj-meta" style="font-size:11.5px">아직 사본 없음</div>
+          </div>
+        </div>
+      </div>
+      <div class="side-foot"><span>CapCut 프로젝트 폴더</span><b>…\CapCut Drafts</b></div>
+    </aside>
+
+    <!-- 상세 -->
+    <section class="detail glass">
+      <div class="scroll">
+        <div class="hero">
+          <div class="cover"><img src="assets/cover.jpg" alt="표지"></div>
+          <div class="hero-info">
+            <div class="eyebrow"><span class="pill">원본</span><span>9월 9일 오후 08:21</span><span class="sep"></span><span>0:46</span><span class="sep"></span><span>1080 × 1920</span></div>
+            <h1>폼클렌징으로 브러시빨지 마세요!장윤주 메이크업 쌤의세척법</h1>
+            <div class="path"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>…\CapCut Drafts\0909 브러시 세척법</div>
+            <div class="tags"><span class="tag">텍스트 클립 21</span><span class="tag">자막 트랙 1</span><span class="tag">TTS 음성 2</span><span class="tag">스티커 3</span></div>
+            <div class="hero-row">
+              <div class="stat"><div class="n">21</div><div class="l">화면 글자</div></div>
+              <div class="stat accent"><div class="n">20</div><div class="l">번역할 문장</div></div>
+              <div class="stat"><div class="n">18</div><div class="l">자동 자막</div></div>
+              <button class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>폴더 열기</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="notice" role="note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>글자 읽어주기(TTS) 음성 2개는 번역되지 않고 원래 언어 음성으로 남습니다.</div>
+
+        <!-- ① -->
+        <div class="card">
+          <div class="card-head"><span class="step">1</span><h2>만들 언어</h2><span class="hint">언어마다 사본 프로젝트가 하나씩 생깁니다</span>
+            <div class="right"><span class="count" id="selCount">2개 선택됨</span><button class="btn ghost sm" id="clearAll">모두 해제</button></div>
+          </div>
+          <div class="chips" id="chips"></div>
+        </div>
+
+        <!-- ② -->
+        <div class="card">
+          <div class="card-head"><span class="step">2</span><h2>사본 이름</h2><span class="hint">원본 이름과 언어 코드로 자동으로 정합니다</span></div>
+          <div class="name-row">
+            <div>
+              <label class="field"><input value="{name} [{lang}]" aria-label="사본 이름 규칙"></label>
+              <div class="field-help"><code>{name}</code> 원본 이름 · <code>{lang}</code> 언어 코드</div>
+            </div>
+            <div class="previews">
+              <div class="pv"><span class="badge">EN</span><span class="t">폼클렌징으로 브러시빨지 마세요!장윤주 메이크업 쌤의세척법 [EN]</span>
+                <span class="warn-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>이미 있음 — 하나 더 만듭니다</span></div>
+              <div class="pv"><span class="badge ja">JA</span><span class="t">폼클렌징으로 브러시빨지 마세요!장윤주 메이크업 쌤의세척법 [JA]</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ③ -->
+        <div class="card">
+          <div class="card-head"><span class="step">3</span><h2>번역 확인·수정</h2><span class="hint">칸을 눌러 바로 고칠 수 있습니다</span></div>
+          <div class="progress-row">
+            <div class="prog"><div class="top"><span>English</span><span class="done">20/20 완료</span></div><div class="bar"><i class="ok" style="width:100%"></i></div></div>
+            <div class="prog"><div class="top"><span>日本語</span><span>6/20</span></div><div class="bar"><i style="width:30%"></i></div></div>
+            <div class="tools">
+              <label class="check"><input type="checkbox">번역 안 된 것만</label>
+              <button class="btn tint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.8L19 9l-4 3.4L16.2 18 12 15.3 7.8 18 9 12.4 5 9l5.1-1.2z"/></svg>번역 미리보기</button>
+            </div>
+          </div>
+          <div class="table" role="table">
+            <div class="tr th" role="row"><div>#</div><div>원문</div><div><span class="badge">EN</span>English</div><div><span class="badge ja">JA</span>日本語</div></div>
+            <div class="tr" role="row"><div class="td no">1</div><div class="td src">폼클렌징으로 브러시
+빨지 마세요!
+장윤주 메이크업 쌤의
+세척법</div><div class="td ed"><span class="cell" contenteditable="true">Don’t wash your brushes
+with face wash!
+Jang Yoon-ju’s makeup artist
+shares her cleaning hack</span></div><div class="td ed"><span class="cell" contenteditable="true">洗顔料でブラシを
+洗わないで！</span></div></div>
+            <div class="tr" role="row"><div class="td no">2</div><div class="td src">🍒 체리돌</div><div class="td ed"><span class="cell" contenteditable="true">🍒 Cherry-dol</span></div><div class="td ed"><span class="cell" contenteditable="true">🍒 チェリードール</span></div></div>
+            <div class="tr" role="row"><div class="td no">3</div><div class="td src">박창수
+오늘자 송도 도로에서 벌어진 일.
+밤 10시 신호 대기 중인 오토바이.</div><div class="td ed"><span class="cell" contenteditable="true">Park Chang-su
+What happened on a Songdo road today.
+A motorcycle waiting at a red light at 10 PM.</span></div><div class="td ed"><span class="cell empty" contenteditable="true">번역 전</span></div></div>
+            <div class="tr" role="row"><div class="td no">4</div><div class="td src">클렌징으로 하면 잘 안 되더라</div><div class="td ed"><span class="cell" contenteditable="true">Face wash never really gets them clean</span></div><div class="td ed"><span class="cell empty" contenteditable="true">번역 전</span></div></div>
+            <div class="tr" role="row"><div class="td no">5</div><div class="td src">그 비누 있어요</div><div class="td ed"><span class="cell" contenteditable="true">You know that soap?</span></div><div class="td ed"><span class="cell" contenteditable="true">あの石けん、あるよ</span></div></div>
+            <div class="tr" role="row"><div class="td no">6</div><div class="td src">아이 깨끗해 비누로</div><div class="td ed"><span class="cell" contenteditable="true">I use Ai-Kkaekkeuthae hand soap</span></div><div class="td ed"><span class="cell empty" contenteditable="true">번역 전</span></div></div>
+          </div>
+        </div>
+
+        <!-- 사본 -->
+        <div class="card copies">
+          <div class="card-head"><h2>이 프로젝트의 사본</h2><span class="hint">1개</span></div>
+          <div class="row">
+            <div class="thumb" style="background-image:url(assets/cover.jpg)"></div>
+            <span class="badge">EN</span>
+            <span class="nm">폼클렌징으로 브러시빨지 마세요!장윤주 메이크업 쌤의세척법 [EN]</span>
+            <span class="when">10월 3일 오전 10:53</span>
+            <div class="acts">
+              <button class="btn ghost sm">보기</button>
+              <button class="btn ghost sm">폴더</button>
+              <button class="btn ghost sm" style="color:var(--danger-ink)">삭제</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 하단 실행 바 -->
+      <div class="runbar">
+        <div class="msg"><div class="langs" id="runLangs"></div>원본은 그대로 두고 <b id="runN1">2개</b>의 새 프로젝트를 만듭니다. 번역 안 된 문장은 자동으로 번역합니다.</div>
+        <button class="cta" id="cta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="13" height="13" rx="3"/><path d="M16 8V6a3 3 0 0 0-3-3H6a3 3 0 0 0-3 3v7a3 3 0 0 0 3 3h2"/></svg><span id="ctaText">2개 언어로 복제 만들기</span></button>
+      </div>
+    </section>
+  </div>
+</div>
+<div class="label">시안 D · glassmorphism</div>
+
+<script>
+const LANGS=[["English","EN"],["日本語","JA"],["简体中文","ZH"],["繁體中文","ZH-TW"],["Español","ES"],["Français","FR"],["Deutsch","DE"],["Português","PT"],["Русский","RU"],["Tiếng Việt","VI"],["Indonesia","ID"],["ไทย","TH"],["العربية","AR"],["हिन्दी","HI"]];
+const sel=new Set(["EN","JA"]);
+const chips=document.getElementById("chips");
+LANGS.forEach(([nm,code])=>{
+  const b=document.createElement("button");
+  b.className="chip";b.type="button";b.dataset.code=code;
+  b.innerHTML=`<span class="nm">${nm}</span><span class="code">${code}</span>`;
+  b.onclick=()=>{sel.has(code)?sel.delete(code):sel.add(code);render();};
+  chips.appendChild(b);
+});
+function render(){
+  chips.querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed",sel.has(c.dataset.code)));
+  const n=sel.size;
+  document.getElementById("selCount").textContent=n+"개 선택됨";
+  document.getElementById("runN1").textContent=n+"개";
+  document.getElementById("ctaText").textContent=n?n+"개 언어로 복제 만들기":"언어를 골라 주세요";
+  document.getElementById("cta").style.opacity=n?1:.5;
+  document.getElementById("runLangs").innerHTML=[...sel].map(c=>`<span class="badge ${c==='JA'?'ja':c.startsWith('ZH')?'zh':''}">${c}</span>`).join("");
+}
+document.getElementById("clearAll").onclick=()=>{sel.clear();render();};
+render();
+</script>
+</body>
+</html>

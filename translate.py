@@ -168,3 +168,116 @@ def translate(texts: list[str], lang: str, settings: dict, progress=None) -> dic
                 glossary[s] = d
         glossary = dict(list(glossary.items())[-60:])
     return result
+
+
+# ─── 내레이션 문장을 자막 조각으로 나누기 ─────────────────────────────────
+SPLITS_PATH = DATA_DIR / "splits.json"
+_BREAKS = set(" 　、。，,.!?！？…~〜")
+_AFTER = set("はがをにでともへやのねよ")  # 일본어 조사 뒤는 끊어도 자연스럽다
+
+
+def _kata(ch: str) -> bool:
+    return "゠" <= ch <= "ヿ"  # 가타카나
+
+
+def _even_split(sentence: str, fragments: list[str]) -> list[str]:
+    """원래 조각 길이 비율대로 나누되, 끊는 자리는 가까운 공백·문장부호·조사 뒤로 옮긴다."""
+    n, total = len(fragments), sum(max(1, len(f)) for f in fragments)
+    cuts, acc = [], 0
+    for f in fragments[:-1]:
+        acc += max(1, len(f))
+        ideal = round(len(sentence) * acc / total)
+        best, best_d = ideal, 99
+        for i in range(max(1, ideal - 4), min(len(sentence), ideal + 5)):
+            prev, nxt = sentence[i - 1], sentence[i]
+            good = prev in _BREAKS or (prev in _AFTER and not _kata(nxt))
+            if good and abs(i - ideal) < best_d:
+                best, best_d = i, abs(i - ideal)
+        while 0 < best < len(sentence) and _kata(sentence[best - 1]) and _kata(sentence[best]):
+            best += 1  # 가타카나 단어 중간은 자르지 않는다
+        cuts.append(max(cuts[-1] + 1 if cuts else 1, min(best, len(sentence) - (n - len(cuts) - 1))))
+    edges = [0, *cuts, len(sentence)]
+    return [sentence[a:b].strip() for a, b in zip(edges, edges[1:])]
+
+
+def _split_key(sentence: str, fragments: list[str], lang: str) -> str:
+    return json.dumps([lang, sentence.replace("\n", " ").strip(), fragments], ensure_ascii=False)
+
+
+def cached_split(sentence: str, fragments: list[str], lang: str) -> list[str] | None:
+    """저장해 둔 나누기만 돌려준다(없으면 None). 조각이 하나면 문장 그대로."""
+    if len(fragments) <= 1:
+        return [sentence.replace("\n", " ").strip()]
+    try:
+        return json.loads(SPLITS_PATH.read_text(encoding="utf-8")).get(_split_key(sentence, fragments, lang))
+    except (OSError, ValueError):
+        return None
+
+
+def split_sentence(sentence: str, fragments: list[str], lang: str, settings: dict) -> list[str]:
+    """번역 문장 하나를 원래 자막 조각 수만큼 나눈다(이어 붙이면 문장과 같다). 결과는 저장해 두고 다시 쓴다.
+    번역 엔진에게 원래 조각과 짝을 맞춰 끊게 하고, 틀리게 오면 길이 비율로 나눈다."""
+    sentence = sentence.replace("\n", " ").strip()
+    if len(fragments) <= 1:
+        return [sentence]
+    key = _split_key(sentence, fragments, lang)
+    try:
+        cache = json.loads(SPLITS_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        cache = {}
+    if key in cache:
+        return cache[key]
+    squash = lambda xs: "".join("".join(xs).split())  # noqa: E731 — 공백만 다른 건 같다고 본다
+    parts = None
+    if engine_name(settings) != "none":
+        prompt = (
+            f"A narration line was spoken as ONE sentence but is shown on screen as {len(fragments)} consecutive "
+            f"caption chunks. Original chunks (in order):\n{json.dumps(fragments, ensure_ascii=False)}\n\n"
+            f"Its {LANGUAGES.get(lang, lang)} version is:\n{json.dumps(sentence, ensure_ascii=False)}\n\n"
+            f"Cut the {LANGUAGES.get(lang, lang)} sentence into EXACTLY {len(fragments)} consecutive chunks that "
+            "line up with the original chunks in meaning and order. Cut only at natural word/phrase boundaries. "
+            "Do NOT change, add, drop or reorder any character — joined together they must equal the sentence. "
+            'OUTPUT (JSON only): {"parts":["...", "..."]}'
+        )
+        call = _call_openai_api if engine_name(settings) == "openai-api" else _call_codex_cli
+        try:
+            got = _parse_json(call(prompt, settings)).get("parts")
+            if isinstance(got, list) and len(got) == len(fragments) and squash(got) == squash([sentence]) \
+                    and all(str(x).strip() for x in got):
+                parts = [str(x).strip() for x in got]
+        except Exception:  # noqa: BLE001 — 엔진이 실패해도 비율 나누기로 계속
+            parts = None
+    parts = parts or _even_split(sentence, fragments)
+    with _lock:
+        cache[key] = parts
+        DATA_DIR.mkdir(exist_ok=True)
+        tmp = SPLITS_PATH.with_suffix(".tmp")
+        tmp.write_text(json.dumps(cache, ensure_ascii=False, indent=1), encoding="utf-8")
+        os.replace(tmp, SPLITS_PATH)
+    return parts
+
+
+# ─── 화면을 넘는 제목·글자를 짧게 다시 번역 ───────────────────────────────
+def shorten_to_fit(source: str, current: str, lang: str, max_chars: int, max_lines: int,
+                   settings: dict, avoid: list[str] | None = None) -> str | None:
+    """화면 폭을 넘는 번역문을 «한 줄 max_chars 자(전각 기준) · 최대 max_lines 줄» 안으로 다시 쓴다.
+    뜻·말투는 유지하고 더 짧은 표현을 고른다. 실패하면 None — 맞는지는 부르는 쪽이 실제 폭으로 다시 잰다."""
+    if engine_name(settings) == "none":
+        return None
+    prompt = (
+        f"This is an on-screen title of a short-form video. It does NOT fit the screen width.\n"
+        f"Original (Korean): {json.dumps(source, ensure_ascii=False)}\n"
+        f"Current {LANGUAGES.get(lang, lang)}: {json.dumps(current, ensure_ascii=False)}\n"
+        + (f"Already tried (still too wide): {json.dumps(avoid, ensure_ascii=False)}\n" if avoid else "")
+        + f"Rewrite it in natural, punchy {LANGUAGES.get(lang, lang)} so that EVERY line has at most {max_chars} "
+        f"full-width characters (count Latin letters/digits as half), using at most {max_lines} lines (\\n). "
+        "Keep the key meaning, names and the hook. Prefer shorter native wording over cutting meaning. "
+        'OUTPUT (JSON only): {"text": "..."}'
+    )
+    call = _call_openai_api if engine_name(settings) == "openai-api" else _call_codex_cli
+    try:
+        out = str(_parse_json(call(prompt, settings)).get("text") or "").strip()
+    except Exception:  # noqa: BLE001
+        return None
+    lines = [x.strip() for x in out.split("\n") if x.strip()]
+    return "\n".join(lines) if lines and len(lines) <= max_lines else None

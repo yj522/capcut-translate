@@ -37,6 +37,7 @@ CapCut 프로젝트를 **통째로 복제**하면서 화면 글자(텍스트·�
 | 번역 말투·프롬프트·언어 목록 | `translate.py` |
 | 어떤 글자를 바꾸는지, 스타일 범위 보정 | `localize.py` |
 | 폴더 찾기·복제·CapCut 목록 등록 | `drafts.py` |
+| 번역 음성(Typecast) | `tts.py` |
 | API | `app.py` |
 
 테스트: `python -m unittest discover tests`
@@ -50,11 +51,11 @@ CapCut 프로젝트를 **통째로 복제**하면서 화면 글자(텍스트·�
 - 본문 `draft_content.json` 은 **평문 JSON**이다. 같은 본문이 `.bak`·`template-2.tmp` 에도 있고, `Timelines/<id>/` 에도 한 벌 더 있다. 여섯 벌 모두 바꾼다.
 - 폴더 안 소재 경로는 `##_draftpath_placeholder_<uuid>_##` 자리표시자라 복사해도 고치지 않는다.
 - 폴더 절대경로·이름·ID 가 박힌 곳: `draft_meta_info.json`(다시 씀), `root_meta_info.json`(새 항목 추가), `Timelines/*/attachment/patch/mini_draft.json`(클라우드 동기 캐시 — 사본에서는 지운다).
-- 텍스트 `content` 의 `styles[].range` 는 글자(코드포인트) 단위다. 번역문 길이에 맞춰 비율로 보정한다.
+- 텍스트 `content` 의 `styles[].range` 는 UTF-16 단위다(이모지 🍒 = 2칸 — 틀리면 마지막 글자가 스타일 밖으로 빠져 크게 나온다). 번역문 길이에 맞춰 비율로 보정한다.
 - 자동 자막(`type: subtitle`)은 `base_content` 도 같이 바꾸고, 단어별 타이밍 `words` 는 비운다(번역하면 단어가 안 맞는다).
 
 ## 아직 안 되는 것
 
-- **글자 읽어주기(TTS) 음성은 원어 그대로 남는다.** 화면에 경고가 뜬다.
+- 글자 읽어주기(TTS) 음성은 **Typecast API 키가 있을 때만** 번역 언어로 새로 만들어 바꾼다(«④ 음성»에서 CapCut 목소리마다 Typecast 목소리를 고른다). 키가 없거나 목소리를 정하지 않은 음성은 원어 그대로 남는다. 길어진 음성은 재생 속도를 최대 1.15배(`tts_max_speed`)까지 올리고, 그래도 넘치면 그 지점에서 영상을 늘려 뒤를 민다(내레이션 구간 자막은 같은 비율로 펼친다).
 - 폰트 자동 교체를 하지 않는다. 한글 전용 폰트에 일본어·태국어 등을 넣으면 CapCut 이 대체 글꼴로 그리거나 글자가 빠질 수 있다.
 - 글자가 길어져 넘치는 경우의 자동 축소를 하지 않는다.

@@ -97,6 +97,248 @@ class LocalizeTest(unittest.TestCase):
         self.assertEqual(localize.tts_linked_count(d), 1)
 
 
+def tts_draft(slot_us):
+    """실측 모양: text_to_audio 오디오 + 오디오 트랙 구간 + 구간이 가리키는 speed 재료."""
+    return {
+        "materials": {
+            "texts": [{"id": "T1", "type": "text", "content": rich("박창수\n오늘자 송도", [[0, 10]])}],
+            "audios": [{"id": "A1", "type": "text_to_audio", "tone_type": "따뜻한 남자", "text_id": "T1",
+                        "duration": slot_us, "path": f"{PH}/textReading/old.wav", "name": "박창수"}],
+            "speeds": [{"id": "S1", "type": "speed", "mode": 0, "speed": 1.0, "curve_speed": None}],
+        },
+        "tracks": [{"type": "audio", "segments": [{
+            "id": "G1", "material_id": "A1", "speed": 1.0, "extra_material_refs": ["S1"],
+            "source_timerange": {"start": 0, "duration": slot_us},
+            "target_timerange": {"start": 2_000_000, "duration": slot_us}}]}],
+    }
+
+
+class TtsTest(unittest.TestCase):
+    def test_tts_items_links_text(self):
+        items = localize.tts_items(tts_draft(5_000_000))
+        self.assertEqual(items, [{"id": "A1", "tone": "따뜻한 남자", "duration": 5_000_000,
+                                  "text_id": "T1", "text": "박창수\n오늘자 송도"}])
+
+    def test_longer_voice_speeds_up_to_fit_slot(self):
+        d = tts_draft(5_000_000)
+        warns = localize.apply_tts(d, {"A1": {"file": "new.wav", "duration": 6_000_000, "name": "Park"}}, max_speed=1.4)
+        a, seg, sp = d["materials"]["audios"][0], d["tracks"][0]["segments"][0], d["materials"]["speeds"][0]
+        self.assertEqual(warns, [])
+        self.assertEqual(a["path"], f"{PH}/textReading/new.wav")
+        self.assertEqual(a["duration"], 6_000_000)
+        self.assertEqual(seg["speed"], 1.2)
+        self.assertEqual(sp["speed"], 1.2)
+        self.assertEqual(seg["source_timerange"], {"start": 0, "duration": 6_000_000})
+        self.assertEqual(seg["target_timerange"], {"start": 2_000_000, "duration": 5_000_000})
+
+    def test_too_long_voice_caps_speed_and_warns(self):
+        d = tts_draft(2_000_000)
+        warns = localize.apply_tts(d, {"A1": {"file": "n.wav", "duration": 4_000_000}}, max_speed=1.4, extend=False)
+        seg = d["tracks"][0]["segments"][0]
+        self.assertEqual(seg["speed"], 1.4)
+        self.assertEqual(seg["target_timerange"]["duration"], round(4_000_000 / 1.4))
+        self.assertEqual(len(warns), 1)
+
+    def test_shorter_voice_keeps_normal_speed(self):
+        d = tts_draft(5_000_000)
+        localize.apply_tts(d, {"A1": {"file": "n.wav", "duration": 3_000_000}})
+        seg = d["tracks"][0]["segments"][0]
+        self.assertEqual(seg["speed"], 1.0)
+        self.assertEqual(seg["target_timerange"]["duration"], 3_000_000)
+
+
+class NarrationTest(unittest.TestCase):
+    """실측(«원희_립»): materials/audio/narration.mp3 한 파일을 두 구간에 잘라 쓰고, 대본은 겹치는 자막."""
+
+    def draft(self):
+        subs = [("S1", 0, 1_000_000, "다른 사람 말"), ("S2", 5_600_000, 800_000, "먼저 광택감이"),
+                ("S3", 6_400_000, 700_000, "너무 예쁜"), ("S4", 12_700_000, 900_000, "좋아!")]
+        return {
+            "materials": {
+                "texts": [{"id": i, "type": "subtitle", "content": rich(t, [[0, len(t)]])} for i, _, _, t in subs],
+                "audios": [{"id": "N", "type": "extract_music", "name": "narration.mp3",
+                            "path": f"{PH}/materials/audio/narration.mp3", "duration": 4_966_666},
+                           {"id": "B", "type": "extract_music", "name": "bgm.mp3", "path": f"{PH}/bgm.mp3"}],
+                "speeds": [{"id": "SP1", "speed": 1.0}, {"id": "SP2", "speed": 1.0}],
+            },
+            "tracks": [
+                {"type": "text", "segments": [{"id": "g" + i, "material_id": i,
+                                               "target_timerange": {"start": s, "duration": d}} for i, s, d, _ in subs]},
+                {"type": "audio", "segments": [
+                    {"id": "A1", "material_id": "N", "extra_material_refs": ["SP1"],
+                     "source_timerange": {"start": 233_333, "duration": 2_500_000},
+                     "target_timerange": {"start": 5_600_000, "duration": 2_500_000}},
+                    {"id": "A2", "material_id": "N", "extra_material_refs": ["SP2"],
+                     "source_timerange": {"start": 2_866_666, "duration": 1_900_000},
+                     "target_timerange": {"start": 12_700_000, "duration": 1_900_000}},
+                    {"id": "A3", "material_id": "B", "target_timerange": {"start": 0, "duration": 20_000_000}}]},
+            ],
+        }
+
+    def test_items_join_overlapping_subtitles_and_skip_bgm(self):
+        items = localize.narration_items(self.draft())
+        self.assertEqual([(i["id"], i["text"]) for i in items], [("A1", "먼저 광택감이 너무 예쁜"), ("A2", "좋아!")])
+
+    def test_items_list_subtitle_parts(self):
+        items = localize.narration_items(self.draft())
+        self.assertEqual(items[0]["parts"], [{"material_id": "S2", "text": "먼저 광택감이"},
+                                             {"material_id": "S3", "text": "너무 예쁜"}])
+
+    def test_overrides_replace_only_those_subtitles(self):
+        d = self.draft()
+        d["materials"]["texts"].append({"id": "S9", "type": "subtitle", "content": rich("너무 예쁜", [[0, 5]])})
+        localize.apply(d, {"너무 예쁜": "めっちゃ可愛い"}, {"S2": "まずはツヤ感が", "S3": "超かわいい"})
+        got = {t["id"]: localize.parse_content(t["content"])[0] for t in d["materials"]["texts"]}
+        self.assertEqual(got["S2"], "まずはツヤ感が")
+        self.assertEqual(got["S3"], "超かわいい")  # 같은 원문이라도 내레이션 구간 것만 음성 문장 조각
+        self.assertEqual(got["S9"], "めっちゃ可愛い")  # 다른 곳은 보통 번역
+
+    def test_even_split_keeps_sentence_and_katakana_words(self):
+        import translate
+        parts = translate._even_split("まずはツヤ感が超かわいいヌーディーリップを塗って", ["먼저 광택감이", "너무 예쁜", "누디한", "입을 바르고"])
+        self.assertEqual(len(parts), 4)
+        self.assertEqual("".join(parts), "まずはツヤ感が超かわいいヌーディーリップを塗って")
+        self.assertFalse(any(p.endswith("ヌー") for p in parts))
+
+    def test_each_segment_gets_its_own_file(self):
+        d = self.draft()
+        localize.apply_narration(d, {"A1": {"file": "cl_ja_1.wav", "duration": 3_000_000},
+                                     "A2": {"file": "cl_ja_2.wav", "duration": 1_500_000}}, max_speed=1.4)
+        seg = {s["id"]: s for s in d["tracks"][1]["segments"]}
+        mats = {a["id"]: a for a in d["materials"]["audios"]}
+        self.assertEqual(mats[seg["A1"]["material_id"]]["path"], f"{PH}/materials/audio/cl_ja_1.wav")
+        self.assertEqual(mats[seg["A2"]["material_id"]]["path"], f"{PH}/materials/audio/cl_ja_2.wav")
+        self.assertEqual(seg["A1"]["speed"], 1.2)  # 3.0초를 2.5초 자리에
+        self.assertEqual(seg["A1"]["source_timerange"], {"start": 0, "duration": 3_000_000})
+        self.assertEqual(seg["A2"]["speed"], 1.0)
+        self.assertEqual(seg["A3"]["material_id"], "B")  # 배경음악은 그대로
+        self.assertEqual(mats["N"]["path"], f"{PH}/materials/audio/narration.mp3")  # 원래 재료도 그대로
+
+
+    def test_too_long_narration_grows_video_and_pushes_later_items(self):
+        d = self.draft()
+        d["materials"]["videos"] = [{"id": "V", "duration": 100_000_000}]
+        d["tracks"].insert(0, {"type": "video", "segments": [
+            {"id": "v1", "material_id": "V", "speed": 1.0, "source_timerange": {"start": 0, "duration": 5_600_000},
+             "target_timerange": {"start": 0, "duration": 5_600_000}},
+            {"id": "v2", "material_id": "V", "speed": 1.0, "source_timerange": {"start": 28_800_000, "duration": 2_500_000},
+             "target_timerange": {"start": 5_600_000, "duration": 2_500_000}},
+            {"id": "v3", "material_id": "V", "speed": 2.0, "source_timerange": {"start": 50_000_000, "duration": 9_000_000},
+             "target_timerange": {"start": 8_100_000, "duration": 4_500_000}}]})
+        d["tracks"].append({"type": "sticker", "segments": [{"id": "title", "material_id": "x",
+                                                             "target_timerange": {"start": 0, "duration": 20_000_000}}]})
+        d["duration"] = 20_000_000
+        warns = localize.apply_narration(d, {"A1": {"file": "a.wav", "duration": 4_200_000}}, max_speed=1.4)  # 2.5초 자리에 4.2초
+        seg = {s["id"]: s for t in d["tracks"] for s in t["segments"]}
+        grow = 3_000_000 - 2_500_000  # 1.4배로 3.0초 → 0.5초 넘침
+        self.assertEqual(seg["A1"]["target_timerange"], {"start": 5_600_000, "duration": 3_000_000})
+        self.assertEqual(seg["v2"]["target_timerange"]["duration"], 2_500_000 + grow)  # 내레이션 밑 장면을 늘림
+        self.assertEqual(seg["v2"]["source_timerange"]["duration"], 2_500_000 + grow)  # 원본에서 더 이어 붙임
+        self.assertEqual(seg["v3"]["target_timerange"]["start"], 8_100_000 + grow)  # 다음 장면은 밀림
+        self.assertEqual(seg["gS4"]["target_timerange"]["start"], 12_700_000 + grow)  # 뒤 자막도 밀림
+        self.assertEqual(seg["A2"]["target_timerange"]["start"], 12_700_000 + grow)  # 뒤 내레이션도 밀림
+        # 내레이션 안 자막(5.6~7.1초)은 2.5→3.0초 비율(1.2배)로 펼쳐진다 — 겹치지도, 비지도 않게
+        self.assertEqual(seg["gS2"]["target_timerange"], {"start": 5_600_000, "duration": 960_000})
+        self.assertEqual(seg["gS3"]["target_timerange"], {"start": 6_560_000, "duration": 840_000})
+        self.assertEqual(seg["gS1"]["target_timerange"]["start"], 0)  # 앞은 그대로
+        self.assertEqual(seg["title"]["target_timerange"]["duration"], 20_000_000 + grow)  # 전체 제목은 길게
+        self.assertEqual(d["duration"], 20_000_000 + grow)
+        self.assertTrue(any("늘림" in w for w in warns))
+
+    def test_grow_slows_shot_when_source_runs_out(self):
+        d = {"materials": {"videos": [{"id": "V", "duration": 3_000_000}], "speeds": []},
+             "tracks": [{"type": "video", "segments": [
+                 {"id": "v", "material_id": "V", "speed": 1.0, "source_timerange": {"start": 1_000_000, "duration": 2_000_000},
+                  "target_timerange": {"start": 0, "duration": 2_000_000}}]}], "duration": 2_000_000}
+        notes = localize.insert_time(d, 2_000_000, 1_000_000)
+        seg = d["tracks"][0]["segments"][0]
+        self.assertEqual(seg["target_timerange"]["duration"], 3_000_000)
+        self.assertEqual(seg["source_timerange"]["duration"], 2_000_000)  # 원본 끝까지만
+        self.assertAlmostEqual(seg["speed"], 0.6667, places=3)
+        self.assertEqual(len(notes), 1)
+
+
+class RangeUnitTest(unittest.TestCase):
+    def test_emoji_counts_two_in_utf16_ranges(self):
+        # 실측(«원희_립»): «🍒체리돌» 은 [0, 5]. «🍒チェリードル» 이면 [0, 8] 이어야 마지막 «ル» 까지 스타일이 덮는다
+        out = json.loads(localize.rebuild_content({"text": "🍒체리돌", "styles": [{"range": [0, 5]}]}, "🍒チェリードル"))
+        self.assertEqual(out["styles"][0]["range"], [0, 8])
+
+    def test_codepoint_ranges_are_kept_as_codepoints(self):
+        out = json.loads(localize.rebuild_content({"text": "🍒체리돌", "styles": [{"range": [0, 4]}]}, "🍒チェリードル"))
+        self.assertEqual(out["styles"][0]["range"], [0, 7])
+
+    def test_split_never_lands_inside_emoji(self):
+        out = json.loads(localize.rebuild_content(
+            {"text": "🍒체리", "styles": [{"range": [0, 2]}, {"range": [2, 4]}]}, "🍒チェ"))
+        self.assertEqual([s["range"] for s in out["styles"]], [[0, 2], [2, 4]])
+
+
+class FontTest(unittest.TestCase):
+    """실측(«원희_립»): 제목은 CapCut 글꼴 «도현»(ID 7616…), fonts 목록에 이름이 적혀 있다."""
+
+    def draft(self):
+        title = json.dumps({"text": "원희의 다이소립과\n궁합좋은 립템", "styles": [
+            {"range": [0, 9], "size": 22.0, "font": {"id": "F1", "path": "C:/cache/F1/font.ttf"}},
+            {"range": [9, 17], "size": 22.0, "font": {"id": "F1", "path": "C:/cache/F1/font.ttf"}}]}, ensure_ascii=False)
+        sub = json.dumps({"text": "오늘 입술", "styles": [
+            {"range": [0, 5], "size": 19.0, "font": {"id": "F2", "path": "C:/cache/F2/Pencil KR.ttf"}}]}, ensure_ascii=False)
+        return {"materials": {"texts": [
+            {"id": "T", "type": "text", "content": title, "font_size": 22.0, "font_path": "C:/cache/F1/font.ttf",
+             "font_resource_id": "F1", "fonts": [{"resource_id": "F1", "title": "도현"}]},
+            {"id": "S", "type": "subtitle", "content": sub, "font_size": 19.0,
+             "fonts": [{"resource_id": "F2", "title": "연필"}]}]}}
+
+    def test_used_fonts_by_name(self):
+        got = {f["key"]: (f["count"], f["sizes"]) for f in localize.used_fonts(self.draft())}
+        self.assertEqual(got, {"도현": (2, [22.0]), "연필": (1, [19.0])})
+
+    def test_long_title_shrinks_but_subtitles_do_not(self):
+        d = self.draft()
+        localize.apply(d, {"원희의 다이소립과\n궁합좋은 립템": "ウォニのダイソーリップと\n相性抜群のリップ",
+                           "오늘 입술": "今日の唇はかわいすぎるって"}, fit=True)
+        t, s = d["materials"]["texts"]
+        self.assertEqual(t["font_size"], 15.83)  # 12칸 × 크기가 화면 폭(190)을 넘음 → 190/12
+        self.assertEqual({st["size"] for st in localize.parse_content(t["content"])[1]["styles"]}, {15.83})
+        self.assertEqual(s["font_size"], 19.0)  # 자막 조각은 크기를 바꾸지 않는다
+
+    def test_short_label_keeps_size_when_it_still_fits(self):
+        self.assertEqual(localize.fit_scale("🍒체리돌", "🍒チェリードル", 12), 1.0)  # 7칸 × 12 = 84 < 화면 폭
+
+    def test_fit_measures_real_width_after_font_swap(self):
+        d = self.draft()
+        d["tracks"] = [{"type": "text", "segments": [{"material_id": "T", "clip": {"scale": {"x": 1.0}}}]}]
+        before = localize.snapshot_texts(d)
+        localize.apply(d, {"원희의 다이소립과\n궁합좋은 립템": "ウォニのダイソーリップと\n相性抜群のリップ",
+                           "오늘 입술": "今日の唇はかわいすぎるって"})
+        localize.apply_fonts(d, {"도현": {"path": "NEW", "scale": 1.0}})
+        widths = {"C:/cache/F1/font.ttf": 6.44, "NEW": 12.0}  # 실측: «도현» 6.44em, M PLUS 1p Black 12em
+        notes = localize.fit_texts(d, before, lambda path, text: widths[path])
+        t, s = d["materials"]["texts"]
+        self.assertEqual(t["font_size"], 18.7)  # 크기 줄이기는 85% 까지만(먼저 짧게 다시 번역한다) → 22 × 0.85
+        self.assertEqual(len(notes), 1)
+        self.assertEqual(s["font_size"], 19.0)  # 자막 조각은 그대로
+
+    def test_extra_line_shrinks_a_little(self):
+        d = self.draft()
+        before = localize.snapshot_texts(d)
+        localize.apply(d, {"원희의 다이소립과\n궁합좋은 립템": "ウォニの\nダイソーリップ\n相性いいリップ"})
+        notes = localize.fit_texts(d, before, lambda path, text: 7.0)  # 폭은 화면 안
+        self.assertEqual(d["materials"]["texts"][0]["font_size"], 18.7)  # 2줄 → 3줄: 22 × 0.85
+        self.assertEqual(len(notes), 1)
+
+    def test_apply_fonts_swaps_file_and_scales(self):
+        d = self.draft()
+        localize.apply_fonts(d, {"도현": {"path": "D:/fonts/MPLUS1p-Black.ttf", "scale": 0.9}})
+        t, s = d["materials"]["texts"]
+        st = localize.parse_content(t["content"])[1]["styles"]
+        self.assertEqual({x["font"]["path"] for x in st}, {"D:/fonts/MPLUS1p-Black.ttf"})
+        self.assertEqual({x["font"]["id"] for x in st}, {""})
+        self.assertEqual(t["font_size"], 19.8)
+        self.assertEqual((t["font_path"], t["font_resource_id"], t["fonts"]), ("D:/fonts/MPLUS1p-Black.ttf", "", []))
+        self.assertEqual(localize.parse_content(s["content"])[1]["styles"][0]["font"]["id"], "F2")  # 짝 없는 글꼴은 그대로
+
+
 class CloneTest(unittest.TestCase):
     def test_clone_registers_new_project_and_keeps_original(self):
         with tempfile.TemporaryDirectory() as td:

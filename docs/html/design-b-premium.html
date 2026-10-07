@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CapCut Translate</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  /* tokens */
+  --primary:#3B82F6; --primary-strong:#2563EB; --primary-press:#1D4ED8; --primary-soft:#EEF4FF; --primary-ring:rgba(59,130,246,.35);
+  --secondary:#8B5CF6;
+  --success:#16A34A; --success-soft:#ECFDF3;
+  --warning:#B45309; --warning-icon:#D97706; --warning-soft:#FFF8EB;
+  --danger:#DC2626; --danger-soft:#FEF2F2;
+  --surface:#FFFFFF; --canvas:#F5F5F7; --sunken:#FAFAFB;
+  --text:#111827; --text-2:#4B5563; --text-3:#6B7280;
+  --line:rgba(17,24,39,.08); --line-2:rgba(17,24,39,.12);
+  --shadow-1:0 1px 2px rgba(17,24,39,.04), 0 1px 1px rgba(17,24,39,.03);
+  --shadow-2:0 1px 2px rgba(17,24,39,.04), 0 8px 24px -8px rgba(17,24,39,.10);
+  --shadow-3:0 20px 40px -16px rgba(17,24,39,.28);
+  --r-sm:8px; --r-md:12px; --r-lg:16px; --r-xl:20px;
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px;
+  --font: "Inter", "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Malgun Gothic", -apple-system, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font-family:var(--font);font-size:14px;line-height:1.5;color:var(--text);background:var(--canvas);
+  -webkit-font-smoothing:antialiased;letter-spacing:-.01em;word-break:keep-all;overflow-wrap:anywhere;overflow:hidden}
+button,input,textarea{font:inherit;color:inherit;letter-spacing:inherit}
+button{cursor:pointer}
+:focus-visible{outline:none;box-shadow:0 0 0 3px var(--primary-ring)!important}
+svg{display:block}
+
+.app{display:grid;grid-template-rows:56px 1fr;height:100vh}
+
+/* ---------- top bar ---------- */
+.topbar{display:flex;align-items:center;gap:var(--s4);padding:0 var(--s5);
+  background:rgba(255,255,255,.78);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);
+  border-bottom:1px solid var(--line);position:relative;z-index:5}
+.brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:15px;letter-spacing:-.02em}
+.logo{width:28px;height:28px;border-radius:8px;background:linear-gradient(145deg,#4F8DF8 0%,#3B82F6 45%,#8B5CF6 100%);
+  display:grid;place-items:center;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 2px 6px rgba(59,130,246,.35)}
+.divider-v{width:1px;height:20px;background:var(--line-2);margin:0 var(--s1)}
+.status{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:500;color:var(--text-2);background:var(--canvas)}
+.status .dot{width:7px;height:7px;border-radius:50%;background:var(--success);box-shadow:0 0 0 3px rgba(22,163,74,.15)}
+.status.ok{color:#15803D;background:var(--success-soft)}
+.status b{font-weight:600;color:var(--text)}
+.status code{font-family:var(--mono);font-size:11.5px;color:var(--text)}
+.spacer{flex:1}
+.btn{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:var(--r-sm);border:1px solid transparent;
+  background:transparent;font-size:13px;font-weight:500;color:var(--text);transition:background .15s, box-shadow .15s, transform .1s;white-space:nowrap}
+.btn:hover{background:rgba(17,24,39,.05)}
+.btn:active{transform:scale(.98)}
+.btn.secondary{background:var(--surface);border-color:var(--line-2);box-shadow:var(--shadow-1)}
+.btn.secondary:hover{background:var(--sunken)}
+.btn.ghost-danger{color:var(--danger)}
+.btn.ghost-danger:hover{background:var(--danger-soft)}
+.btn svg{width:16px;height:16px;color:var(--text-3)}
+.btn.icon{width:32px;padding:0;justify-content:center}
+
+/* ---------- body ---------- */
+.main{display:grid;grid-template-columns:340px 1fr;min-height:0}
+
+/* sidebar */
+.sidebar{background:rgba(255,255,255,.6);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.side-head{padding:var(--s4) var(--s4) var(--s3)}
+.search{position:relative}
+.search input{width:100%;height:36px;border-radius:10px;border:1px solid transparent;background:rgba(17,24,39,.05);padding:0 12px 0 34px;font-size:13px;transition:.15s}
+.search input::placeholder{color:var(--text-3)}
+.search input:focus{background:var(--surface);border-color:var(--primary);outline:none;box-shadow:0 0 0 3px var(--primary-ring)}
+.search svg{position:absolute;left:11px;top:10px;width:16px;height:16px;color:var(--text-3)}
+.list-label{display:flex;justify-content:space-between;align-items:center;padding:var(--s4) var(--s2) var(--s2);font-size:12px;font-weight:600;color:var(--text-3);letter-spacing:0}
+.list-label span:last-child{font-weight:500}
+.list{flex:1;overflow:auto;padding:0 var(--s3) var(--s4)}
+.proj{display:flex;gap:var(--s3);align-items:flex-start;padding:10px;border-radius:var(--r-md);cursor:pointer;transition:background .15s;position:relative}
+.proj:hover{background:rgba(17,24,39,.04)}
+.proj.active{background:var(--surface);box-shadow:var(--shadow-2),0 0 0 1px var(--line)}
+.proj.active::before{content:"";position:absolute;left:-12px;top:14px;bottom:14px;width:3px;border-radius:0 3px 3px 0;background:var(--primary)}
+.thumb{width:40px;aspect-ratio:9/16;border-radius:7px;flex:none;background-size:cover;background-position:center;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
+.proj-body{min-width:0;flex:1}
+.proj-title{font-size:13.5px;font-weight:600;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;letter-spacing:-.015em}
+.proj-meta{font-size:12px;color:var(--text-3);margin-top:3px;font-variant-numeric:tabular-nums}
+.badges{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap}
+.badge{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:6px;font-size:11px;font-weight:600;font-family:var(--mono);letter-spacing:.02em;background:var(--primary-soft);color:var(--primary-press)}
+.badge.ja{background:#F5F0FF;color:#6D28D9}
+.badge.zh{background:#FFF1F2;color:#BE123C}
+.copy{display:flex;gap:10px;align-items:center;margin:2px 0 6px 30px;padding:8px 10px;border-radius:10px;cursor:pointer;position:relative}
+.copy::before{content:"";position:absolute;left:-12px;top:-4px;height:22px;width:10px;border-left:1.5px solid var(--line-2);border-bottom:1.5px solid var(--line-2);border-bottom-left-radius:8px}
+.copy:hover{background:rgba(17,24,39,.04)}
+.copy .name{font-size:12.5px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}
+.copy .thumb{width:22px;border-radius:4px}
+
+/* detail */
+.detail{display:grid;grid-template-rows:1fr auto;min-height:0;min-width:0}
+.scroll{overflow:auto;min-height:0}
+.wrap{max-width:960px;margin:0 auto;padding:var(--s6) 40px 40px}
+
+.hero{display:grid;grid-template-columns:132px 1fr;gap:28px;align-items:start}
+.cover{width:132px;aspect-ratio:9/16;border-radius:var(--r-lg);background:#ddd url(assets/cover.jpg) center/cover;box-shadow:var(--shadow-3),0 0 0 1px rgba(0,0,0,.05)}
+.eyebrow{font-size:12px;font-weight:500;color:var(--text-3);font-variant-numeric:tabular-nums;display:flex;gap:8px;align-items:center}
+.eyebrow .sep{width:3px;height:3px;border-radius:50%;background:currentColor;opacity:.6}
+.pill-src{height:20px;padding:0 8px;border-radius:999px;background:rgba(17,24,39,.06);color:var(--text-2);font-size:11px;font-weight:600;display:inline-flex;align-items:center}
+h1{font-size:30px;line-height:1.25;font-weight:700;letter-spacing:-.035em;margin:8px 0 var(--s5);max-width:640px}
+.stats{display:flex;gap:0;margin-bottom:var(--s5)}
+.stat{padding-right:28px;margin-right:28px;border-right:1px solid var(--line-2)}
+.stat:last-child{border-right:0}
+.stat .n{font-size:30px;font-weight:600;letter-spacing:-.03em;line-height:1.1;font-variant-numeric:tabular-nums}
+.stat .l{font-size:12px;color:var(--text-3);margin-top:4px;font-weight:500}
+.hero-actions{display:flex;gap:var(--s2)}
+
+.notice{display:flex;gap:10px;align-items:center;margin-top:28px;padding:12px 16px;border-radius:var(--r-md);background:var(--warning-soft);color:#7C3D0A;font-size:13px;box-shadow:inset 0 0 0 1px rgba(217,119,6,.18)}
+.notice svg{width:18px;height:18px;color:var(--warning-icon);flex:none}
+
+.card{background:var(--surface);border-radius:var(--r-xl);box-shadow:var(--shadow-2),0 0 0 1px var(--line);padding:var(--s5);margin-top:var(--s5)}
+.card-head{display:flex;align-items:center;gap:var(--s3);margin-bottom:var(--s4)}
+.step{width:24px;height:24px;border-radius:50%;background:var(--text);color:#fff;font-size:12px;font-weight:600;display:grid;place-items:center;flex:none}
+.card-head h2{font-size:18px;font-weight:600;letter-spacing:-.025em;margin:0}
+.card-head .sub{font-size:13px;color:var(--text-3)}
+.card-head .right{margin-left:auto;display:flex;gap:var(--s3);align-items:center}
+.count{font-size:13px;font-weight:600;color:var(--primary-strong)}
+.link{border:0;background:none;padding:4px 6px;border-radius:6px;font-size:13px;font-weight:500;color:var(--primary-strong)}
+.link:hover{background:var(--primary-soft)}
+
+.chips{display:grid;grid-template-columns:repeat(7,1fr);gap:var(--s2)}
+.chip{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:10px 12px;border-radius:var(--r-md);border:1px solid var(--line-2);background:var(--surface);text-align:left;transition:border-color .15s,background .15s,box-shadow .15s;position:relative;min-width:0}
+.chip:hover{border-color:rgba(17,24,39,.22);background:var(--sunken)}
+.chip .nm{font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.chip .cd{font-family:var(--mono);font-size:11px;color:var(--text-3);font-weight:500}
+.chip .ck{position:absolute;right:8px;top:8px;width:16px;height:16px;border-radius:50%;background:var(--primary-strong);display:none;place-items:center}
+.chip[aria-pressed="true"]{border-color:var(--primary);background:var(--primary-soft);box-shadow:0 0 0 1px var(--primary) inset}
+.chip[aria-pressed="true"] .cd{color:var(--primary-press)}
+.chip[aria-pressed="true"] .ck{display:grid}
+
+.field{display:flex;align-items:center;height:44px;border-radius:var(--r-md);border:1px solid var(--line-2);background:var(--surface);padding:0 14px;gap:10px;transition:.15s}
+.field:focus-within{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-ring)}
+.field input{border:0;outline:0;flex:1;font-family:var(--mono);font-size:13.5px;background:transparent}
+.field .hint{font-size:12px;color:var(--text-3);white-space:nowrap}
+.tok{color:var(--secondary)}
+.preview{margin-top:var(--s3);border-radius:var(--r-md);background:var(--sunken);box-shadow:inset 0 0 0 1px var(--line)}
+.prow{display:flex;align-items:center;gap:var(--s3);padding:10px 14px;font-size:13px}
+.prow+.prow{border-top:1px solid var(--line)}
+.prow .nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
+.warn-tag{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;color:var(--warning);background:var(--warning-soft);height:24px;padding:0 9px;border-radius:999px;white-space:nowrap;box-shadow:inset 0 0 0 1px rgba(217,119,6,.2)}
+.warn-tag svg{width:13px;height:13px}
+.ok-tag{font-size:12px;color:var(--text-3);white-space:nowrap}
+
+.progress-row{display:grid;grid-template-columns:1fr 1fr auto;gap:var(--s4);align-items:center;margin-bottom:var(--s4)}
+.prog{padding:12px 14px;border-radius:var(--r-md);background:var(--sunken);box-shadow:inset 0 0 0 1px var(--line)}
+.prog-top{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;margin-bottom:8px}
+.prog-top b{font-weight:600}
+.prog-top span{font-variant-numeric:tabular-nums;color:var(--text-2);font-size:12px}
+.prog-top .done{color:#15803D;font-weight:600}
+.bar{height:6px;border-radius:999px;background:rgba(17,24,39,.08);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:inherit;background:var(--primary)}
+.bar i.full{background:var(--success)}
+.tools{display:flex;gap:var(--s3);align-items:center}
+.check{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--text-2);cursor:pointer;white-space:nowrap}
+.check input{appearance:none;width:18px;height:18px;border-radius:5px;border:1.5px solid rgba(17,24,39,.25);margin:0;display:grid;place-items:center;background:#fff;cursor:pointer}
+.check input:checked{background:var(--primary-strong);border-color:var(--primary-strong)}
+.check input:checked::after{content:"";width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg) translate(-1px,-1px)}
+
+.table{border-radius:var(--r-md);box-shadow:0 0 0 1px var(--line-2);overflow:hidden}
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+th{font-size:12px;font-weight:600;color:var(--text-3);text-align:left;padding:10px 12px;background:var(--sunken);border-bottom:1px solid var(--line-2)}
+th .badge{margin-left:6px;vertical-align:1px}
+td{padding:6px;border-bottom:1px solid var(--line);vertical-align:top;font-size:13px;line-height:1.55}
+tr:last-child td{border-bottom:0}
+td.no{color:var(--text-3);font-variant-numeric:tabular-nums;text-align:center;padding-top:14px;font-size:12px;font-weight:500}
+td.src{padding:12px;color:var(--text);white-space:pre-line}
+.cell{display:block;width:100%;min-height:44px;padding:7px 9px;border-radius:8px;border:1px solid transparent;white-space:pre-line;transition:.15s;outline:none}
+.cell:hover{background:var(--sunken);border-color:var(--line-2)}
+.cell:focus{background:#fff;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-ring)}
+.cell.empty{color:var(--text-3);background:repeating-linear-gradient(-45deg,transparent 0 6px,rgba(17,24,39,.025) 6px 12px);border:1px dashed var(--line-2)}
+.cell.empty::before{content:"번역 전";font-size:12px;font-weight:500}
+.cell.empty:focus::before{content:""}
+.table-foot{display:flex;justify-content:space-between;padding:10px 14px;font-size:12px;color:var(--text-3);background:var(--sunken);border-top:1px solid var(--line-2)}
+
+.copies{border-radius:var(--r-md);box-shadow:0 0 0 1px var(--line-2)}
+.crow{display:flex;align-items:center;gap:var(--s3);padding:12px 14px}
+.crow .nm{flex:1;min-width:0;font-size:13.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crow .dt{font-size:12px;color:var(--text-3);white-space:nowrap;font-variant-numeric:tabular-nums}
+.crow .acts{display:flex;gap:2px}
+
+/* action bar */
+.actionbar{border-top:1px solid var(--line);background:rgba(255,255,255,.82);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px)}
+.actionbar .inner{max-width:960px;margin:0 auto;padding:14px 40px 28px;display:flex;align-items:center;gap:var(--s5)}
+.ab-text{flex:1;font-size:13px;color:var(--text-2);line-height:1.5}
+.ab-text b{color:var(--text);font-weight:600}
+.cta{height:48px;padding:0 24px;border-radius:var(--r-md);border:0;background:var(--primary-strong);color:#fff;font-size:15px;font-weight:600;letter-spacing:-.015em;display:inline-flex;align-items:center;gap:8px;
+  box-shadow:0 1px 0 rgba(255,255,255,.2) inset,0 6px 16px -4px rgba(37,99,235,.5);transition:background .15s,transform .1s;white-space:nowrap}
+.cta:hover{background:var(--primary-press)}
+.cta:active{transform:scale(.985)}
+.cta:disabled{background:#E5E7EB;color:var(--text-3);box-shadow:none;cursor:not-allowed}
+.cta svg{width:18px;height:18px}
+
+.sig{position:fixed;right:12px;bottom:6px;font-size:10.5px;font-weight:500;color:var(--text-3);background:rgba(255,255,255,.85);padding:3px 9px;border-radius:999px;box-shadow:0 0 0 1px var(--line);z-index:20;pointer-events:none}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Top bar -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h8M8 3v2M5.5 5c.8 3 3 5.5 6 7M10.5 5c-.7 3-3 6-6.5 8"/><path d="M13 21l4-10 4 10M14.5 17.5h5"/></svg>
+      </div>
+      CapCut Translate
+    </div>
+    <div class="divider-v"></div>
+    <span class="status ok"><span class="dot"></span>CapCut 꺼짐</span>
+    <span class="status">번역: <code>codex CLI</code></span>
+    <div class="spacer"></div>
+    <button class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>새로고침</button>
+    <button class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>프로젝트 폴더</button>
+    <button class="btn secondary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>설정</button>
+  </header>
+
+  <div class="main">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="side-head">
+        <div class="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <input type="search" placeholder="프로젝트 검색" aria-label="프로젝트 검색">
+        </div>
+        <div class="list-label"><span>프로젝트 5 · 사본 4</span><span>최근 순</span></div>
+      </div>
+      <nav class="list">
+        <div class="proj active" tabindex="0">
+          <div class="thumb" style="background-image:url(assets/cover.jpg)"></div>
+          <div class="proj-body">
+            <div class="proj-title">폼클렌징으로 브러시빨지 마세요!장윤주 메이크업 쌤의세척법</div>
+            <div class="proj-meta">9월 9일 오후 08:21 · 0:46</div>
+            <div class="badges"><span class="badge">EN</span></div>
+          </div>
+        </div>
+        <div class="copy" tabindex="0">
+          <div class="thumb" style="background-image:url(assets/cover.jpg)"></div>
+          <span class="name">폼클렌징으로 브러시빨지 마세요!장윤주 메이크업 쌤의세척법 [EN]</span>
+          <span class="badge">EN</span>
+        </div>
+
+        <div class="proj" tabindex="0">
+          <div class="thumb" style="background:linear-gradient(160deg,#FDE68A 0%,#F59E0B 40%,#15803D 100%)"></div>
+          <div class="proj-body">
+            <div class="proj-title">여름 캠핑 브이로그 쇼츠</div>
+            <div class="proj-meta">9월 2일 오후 03:10 · 0:58</div>
+            <div class="badges"><span class="badge ja">JA</span></div>
+          </div>
+        </div>
+        <div class="copy" tabindex="0">
+          <div class="thumb" style="background:linear-gradient(160deg,#FDE68A 0%,#F59E0B 40%,#15803D 100%)"></div>
+          <span class="name">여름 캠핑 브이로그 쇼츠 [JA]</span>
+          <span class="badge ja">JA</span>
+        </div>
+
+        <div class="proj" tabindex="0">
+          <div class="thumb" style="background:linear-gradient(170deg,#F5E6D3 0%,#C69C72 55%,#6B4423 100%)"></div>
+          <div class="proj-body">
+            <div class="proj-title">홈카페 라떼아트 3분 정리</div>
+            <div class="proj-meta">8월 27일 오전 11:42 · 3:04</div>
+            <div class="badges"><span class="badge ja">JA</span><span class="badge zh">ZH</span></div>
+          </div>
+        </div>
+        <div class="copy" tabindex="0">
+          <div class="thumb" style="background:linear-gradient(170deg,#F5E6D3 0%,#C69C72 55%,#6B4423 100%)"></div>
+          <span class="name">홈카페 라떼아트 3분 정리 [JA]</span>
+          <span class="badge ja">JA</span>
+        </div>
+        <div class="copy" tabindex="0">
+          <div class="thumb" style="background:linear-gradient(170deg,#F5E6D3 0%,#C69C72 55%,#6B4423 100%)"></div>
+          <span class="name">홈카페 라떼아트 3분 정리 [ZH]</span>
+          <span class="badge zh">ZH</span>
+        </div>
+
+        <div class="proj" tabindex="0">
+          <div class="thumb" style="background:linear-gradient(165deg,#BAE6FD 0%,#7DD3FC 35%,#86EFAC 100%)"></div>
+          <div class="proj-body">
+            <div class="proj-title">강아지 산책 루틴</div>
+            <div class="proj-meta">8월 19일 오후 07:05 · 0:32</div>
+          </div>
+        </div>
+
+        <div class="proj" tabindex="0">
+          <div class="thumb" style="background:linear-gradient(165deg,#1E293B 0%,#4338CA 60%,#A78BFA 100%)"></div>
+          <div class="proj-body">
+            <div class="proj-title">퇴근 후 30분 홈트 루틴</div>
+            <div class="proj-meta">8월 11일 오후 10:17 · 1:12</div>
+          </div>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- Detail -->
+    <section class="detail">
+      <div class="scroll">
+        <div class="wrap">
+          <div class="hero">
+            <div class="cover" role="img" aria-label="표지"></div>
+            <div>
+              <div class="eyebrow"><span class="pill-src">원본</span>9월 9일 오후 08:21<span class="sep"></span>0:46</div>
+              <h1>폼클렌징으로 브러시빨지 마세요!장윤주 메이크업 쌤의세척법</h1>
+              <div class="stats">
+                <div class="stat"><div class="n">21</div><div class="l">화면 글자</div></div>
+                <div class="stat"><div class="n">20</div><div class="l">번역할 문장</div></div>
+                <div class="stat"><div class="n">18</div><div class="l">자동 자막</div></div>
+              </div>
+              <div class="hero-actions">
+                <button class="btn secondary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>폴더 열기</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="notice" role="note">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+            글자 읽어주기(TTS) 음성 2개는 번역되지 않고 원래 언어 음성으로 남습니다.
+          </div>
+
+          <!-- 1 -->
+          <div class="card">
+            <div class="card-head">
+              <span class="step">1</span><h2>만들 언어</h2>
+              <div class="right"><span class="count" id="selCount">2개 선택됨</span><button class="link" id="clearAll">모두 해제</button></div>
+            </div>
+            <div class="chips" id="chips"></div>
+          </div>
+
+          <!-- 2 -->
+          <div class="card">
+            <div class="card-head">
+              <span class="step">2</span><h2>사본 이름</h2>
+              <span class="sub">언어마다 하나씩 만들어집니다</span>
+            </div>
+            <label class="field">
+              <input value="{name} [{lang}]" aria-label="사본 이름 규칙">
+              <span class="hint"><span class="tok">{name}</span> 원본 이름 · <span class="tok">{lang}</span> 언어 코드</span>
+            </label>
+            <div class="preview">
+              <div class="prow"><span class="badge">EN</span><span class="nm">폼클렌징으로 브러시빨지 마세요!장윤주 메이크업 쌤의세척법 [EN]</span>
+                <span class="warn-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>이미 있음 — 하나 더 만듭니다</span></div>
+              <div class="prow"><span class="badge ja">JA</span><span class="nm">폼클렌징으로 브러시빨지 마세요!장윤주 메이크업 쌤의세척법 [JA]</span><span class="ok-tag">새로 만듦</span></div>
+            </div>
+          </div>
+
+          <!-- 3 -->
+          <div class="card">
+            <div class="card-head">
+              <span class="step">3</span><h2>번역 확인·수정</h2>
+              <span class="sub">칸을 눌러 바로 고칠 수 있습니다</span>
+            </div>
+            <div class="progress-row">
+              <div class="prog"><div class="prog-top"><b>English</b><span class="done">20/20 완료</span></div><div class="bar"><i class="full" style="width:100%"></i></div></div>
+              <div class="prog"><div class="prog-top"><b>日本語</b><span>6/20</span></div><div class="bar"><i style="width:30%"></i></div></div>
+              <div class="tools">
+                <label class="check"><input type="checkbox">번역 안 된 것만</label>
+                <button class="btn secondary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>번역 미리보기</button>
+              </div>
+            </div>
+            <div class="table">
+              <table>
+                <colgroup><col style="width:44px"><col style="width:30%"><col><col></colgroup>
+                <thead><tr><th style="text-align:center">#</th><th>원문</th><th>English<span class="badge">EN</span></th><th>日本語<span class="badge ja">JA</span></th></tr></thead>
+                <tbody>
+                  <tr><td class="no">1</td><td class="src">폼클렌징으로 브러시
+빨지 마세요!
+장윤주 메이크업 쌤의
+세척법</td><td><div class="cell" contenteditable="true">Don’t wash your brushes
+with face wash!
+Jang Yoon-ju’s makeup artist
+shares her cleaning hack</div></td><td><div class="cell" contenteditable="true" lang="ja">洗顔料でブラシを
+洗わないで！</div></td></tr>
+                  <tr><td class="no">2</td><td class="src">🍒 체리돌</td><td><div class="cell" contenteditable="true">🍒 Cherry-dol</div></td><td><div class="cell" contenteditable="true" lang="ja">🍒 チェリードール</div></td></tr>
+                  <tr><td class="no">3</td><td class="src">박창수
+오늘자 송도 도로에서 벌어진 일.
+밤 10시 신호 대기 중인 오토바이.</td><td><div class="cell" contenteditable="true">Park Chang-su
+What happened on a Songdo road today.
+A motorcycle waiting at a red light at 10 PM.</div></td><td><div class="cell empty" contenteditable="true" lang="ja"></div></td></tr>
+                  <tr><td class="no">4</td><td class="src">클렌징으로 하면 잘 안 되더라</td><td><div class="cell" contenteditable="true">Face wash never really gets them clean</div></td><td><div class="cell empty" contenteditable="true" lang="ja"></div></td></tr>
+                  <tr><td class="no">5</td><td class="src">그 비누 있어요</td><td><div class="cell" contenteditable="true">You know that soap?</div></td><td><div class="cell" contenteditable="true" lang="ja">あの石けん、あるよ</div></td></tr>
+                  <tr><td class="no">6</td><td class="src">아이 깨끗해 비누로</td><td><div class="cell" contenteditable="true">I use Ai-Kkaekkeuthae hand soap</div></td><td><div class="cell empty" contenteditable="true" lang="ja"></div></td></tr>
+                </tbody>
+              </table>
+              <div class="table-foot"><span>20개 중 6개 표시</span><span>수정한 내용은 자동 저장됩니다</span></div>
+            </div>
+          </div>
+
+          <!-- copies -->
+          <div class="card">
+            <div class="card-head"><h2>이 프로젝트의 사본</h2><span class="sub">1개</span></div>
+            <div class="copies">
+              <div class="crow">
+                <span class="badge">EN</span>
+                <span class="nm">폼클렌징으로 브러시빨지 마세요!장윤주 메이크업 쌤의세척법 [EN]</span>
+                <span class="dt">10월 3일 오전 10:53</span>
+                <div class="acts">
+                  <button class="btn">보기</button>
+                  <button class="btn">폴더</button>
+                  <button class="btn ghost-danger">삭제</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- action bar -->
+      <div class="actionbar">
+        <div class="inner">
+          <div class="ab-text">원본은 그대로 두고 <b id="abN">2개의 새 프로젝트</b>를 만듭니다.<br>번역 안 된 문장은 자동으로 번역합니다.</div>
+          <button class="cta" id="cta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="13" height="13" rx="3"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg><span id="ctaText">2개 언어로 복제 만들기</span></button>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div class="sig">시안 B · premium</div>
+
+<script>
+const LANGS=[["English","EN",1],["日本語","JA",1],["简体中文","ZH"],["繁體中文","ZH-TW"],["Español","ES"],["Français","FR"],["Deutsch","DE"],
+ ["Português","PT"],["Русский","RU"],["Tiếng Việt","VI"],["Indonesia","ID"],["ไทย","TH"],["العربية","AR"],["हिन्दी","HI"]];
+const chips=document.getElementById('chips');
+chips.innerHTML=LANGS.map(([n,c,s])=>`<button class="chip" aria-pressed="${!!s}"><span class="nm">${n}</span><span class="cd">${c}</span><span class="ck"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L19 7"/></svg></span></button>`).join('');
+function sync(){
+  const n=chips.querySelectorAll('[aria-pressed="true"]').length;
+  document.getElementById('selCount').textContent=n+'개 선택됨';
+  document.getElementById('abN').textContent=n+'개의 새 프로젝트';
+  document.getElementById('ctaText').textContent=n?n+'개 언어로 복제 만들기':'언어를 선택하세요';
+  document.getElementById('cta').disabled=!n;
+}
+chips.addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;b.setAttribute('aria-pressed',b.getAttribute('aria-pressed')!=='true');sync();});
+document.getElementById('clearAll').onclick=()=>{chips.querySelectorAll('.chip').forEach(b=>b.setAttribute('aria-pressed','false'));sync();};
+</script>
+</body>
+</html>

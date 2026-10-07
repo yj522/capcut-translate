@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CapCut Translate</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --background:#ffffff;
+  --foreground:#09090b;
+  --muted:#f4f4f5;
+  --muted-foreground:#71717a;
+  --card:#ffffff;
+  --border:#e4e4e7;
+  --input:#e4e4e7;
+  --ring:#18181b;
+  --primary:#18181b;
+  --primary-foreground:#fafafa;
+  --secondary:#f4f4f5;
+  --accent:#f4f4f5;
+  --success:#16a34a;
+  --success-bg:#f0fdf4;
+  --success-border:#bbf7d0;
+  --warning:#b45309;
+  --warning-bg:#fffbeb;
+  --warning-border:#fde68a;
+  --danger:#dc2626;
+  --radius:8px;
+  --font: "Geist","Pretendard Variable","Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --mono: "Geist Mono","Fira Code",ui-monospace,Consolas,monospace;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.05);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:var(--font);background:var(--background);color:var(--foreground);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;word-break:keep-all;overflow-wrap:anywhere;overflow:hidden}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0}
+:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+svg.i{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* layout */
+.app{display:grid;grid-template-rows:56px 1fr;height:100vh}
+.topbar{display:flex;align-items:center;gap:16px;padding:0 20px;border-bottom:1px solid var(--border);background:var(--background)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:15px;letter-spacing:-.01em}
+.logo{width:28px;height:28px;border-radius:7px;background:var(--primary);color:#fff;display:grid;place-items:center}
+.logo svg{width:16px;height:16px}
+.sep{width:1px;height:20px;background:var(--border)}
+.status{display:flex;gap:8px}
+.pill{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border:1px solid var(--border);border-radius:999px;font-size:12px;font-weight:500;color:var(--muted-foreground)}
+.pill b{color:var(--foreground);font-weight:500}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--success);box-shadow:0 0 0 3px #dcfce7}
+.topbar .right{margin-left:auto;display:flex;gap:8px}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:36px;padding:0 14px;border-radius:var(--radius);font-size:14px;font-weight:500;white-space:nowrap;transition:background .15s,border-color .15s,color .15s}
+.btn-outline{border:1px solid var(--input);background:var(--background);box-shadow:var(--shadow-sm)}
+.btn-outline:hover{background:var(--accent)}
+.btn-ghost:hover{background:var(--accent)}
+.btn-primary{background:var(--primary);color:var(--primary-foreground);box-shadow:var(--shadow-sm)}
+.btn-primary:hover{background:#27272a}
+.btn-sm{height:32px;padding:0 12px;font-size:13px}
+.btn-lg{height:44px;padding:0 22px;font-size:15px}
+.btn-icon{width:32px;padding:0}
+.btn-danger-ghost{color:var(--danger)}
+.btn-danger-ghost:hover{background:#fef2f2}
+
+.main{display:grid;grid-template-columns:320px 1fr;min-height:0}
+
+/* sidebar */
+.sidebar{border-right:1px solid var(--border);display:flex;flex-direction:column;min-height:0;background:#fafafa}
+.side-top{padding:16px 16px 12px}
+.search{position:relative}
+.search svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted-foreground)}
+.input{width:100%;height:36px;border:1px solid var(--input);border-radius:var(--radius);background:var(--background);padding:0 12px;font-size:14px;box-shadow:var(--shadow-sm);outline:none}
+.input:focus{border-color:var(--ring);box-shadow:0 0 0 3px rgba(24,24,27,.08)}
+.search .input{padding-left:34px}
+.kbd{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-family:var(--mono);font-size:11px;color:var(--muted-foreground);border:1px solid var(--border);border-radius:4px;padding:0 5px;background:var(--muted)}
+.side-head{display:flex;justify-content:space-between;align-items:center;padding:6px 16px 8px;font-size:12px;font-weight:500;color:var(--muted-foreground)}
+.list{overflow:auto;padding:0 8px 16px;flex:1}
+.item{display:flex;gap:12px;padding:8px;border-radius:var(--radius);border:1px solid transparent;cursor:pointer;align-items:flex-start}
+.item:hover{background:var(--accent)}
+.item.active{background:var(--background);border-color:var(--border);box-shadow:var(--shadow-sm)}
+.thumb{width:40px;height:71px;border-radius:6px;flex:none;background-size:cover;background-position:center;border:1px solid rgba(0,0,0,.06)}
+.item .meta{min-width:0;flex:1}
+.item .name{font-size:13px;font-weight:500;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.item .sub{font-size:12px;color:var(--muted-foreground);margin-top:2px;font-variant-numeric:tabular-nums}
+.badges{display:flex;gap:4px;margin-top:6px}
+.badge{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:6px;font-size:11px;font-weight:600;font-family:var(--mono);letter-spacing:.02em;border:1px solid var(--border);background:var(--background);color:var(--foreground)}
+.badge.solid{background:var(--primary);color:var(--primary-foreground);border-color:var(--primary)}
+.copy{display:flex;align-items:center;gap:8px;margin:2px 0 6px 28px;padding:6px 8px;border-radius:6px;font-size:12.5px;color:var(--muted-foreground);position:relative;cursor:pointer}
+.copy:hover{background:var(--accent);color:var(--foreground)}
+.copy::before{content:"";position:absolute;left:-12px;top:-4px;width:10px;height:18px;border-left:1px solid var(--border);border-bottom:1px solid var(--border);border-bottom-left-radius:6px}
+.copy span.t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.group{margin-bottom:4px}
+
+/* detail */
+.detail{display:flex;flex-direction:column;min-height:0;min-width:0}
+.scroll{overflow:auto;flex:1;min-height:0}
+.wrap{max-width:1000px;margin:0 auto;padding:24px 32px 40px}
+.head{display:flex;gap:24px;align-items:stretch}
+.cover{width:132px;aspect-ratio:9/16;border-radius:10px;overflow:hidden;border:1px solid var(--border);flex:none;box-shadow:0 1px 3px rgba(0,0,0,.08);background:#111}
+.cover img{width:100%;height:100%;object-fit:cover;display:block}
+.head-body{flex:1;min-width:0;display:flex;flex-direction:column}
+.eyebrow{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted-foreground);font-variant-numeric:tabular-nums}
+.eyebrow .badge{font-family:var(--font);font-weight:500}
+h1{font-size:24px;font-weight:600;letter-spacing:-.02em;line-height:1.3;margin-top:6px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:auto;padding-top:16px}
+.stat{border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;box-shadow:var(--shadow-sm)}
+.stat .k{font-size:12px;color:var(--muted-foreground)}
+.stat .v{font-size:22px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.3}
+.head-actions{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+
+.alert{display:flex;gap:10px;align-items:center;margin-top:20px;border:1px solid var(--warning-border);background:var(--warning-bg);color:#92400e;border-radius:var(--radius);padding:10px 14px;font-size:13.5px}
+.alert svg{color:var(--warning)}
+
+.card{border:1px solid var(--border);border-radius:12px;margin-top:20px;background:var(--card);box-shadow:var(--shadow-sm)}
+.card-h{display:flex;align-items:center;gap:12px;padding:16px 20px 0}
+.step{width:24px;height:24px;border-radius:50%;background:var(--primary);color:#fff;font-size:12px;font-weight:600;display:grid;place-items:center;flex:none;font-family:var(--mono)}
+.card-h h2{font-size:16px;font-weight:600;letter-spacing:-.01em}
+.card-h .desc{font-size:13px;color:var(--muted-foreground)}
+.card-h .tail{margin-left:auto;display:flex;align-items:center;gap:8px}
+.card-b{padding:14px 20px 20px}
+.muted{color:var(--muted-foreground)}
+
+.chips{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+.chip{display:flex;align-items:center;justify-content:space-between;gap:6px;height:36px;padding:0 10px;border:1px solid var(--input);border-radius:var(--radius);background:var(--background);font-size:13px;font-weight:500;transition:all .12s;min-width:0}
+.chip .n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip .c{font-family:var(--mono);font-size:10.5px;color:var(--muted-foreground);font-weight:500}
+.chip:hover{background:var(--accent)}
+.chip[aria-pressed="true"]{background:var(--primary);border-color:var(--primary);color:var(--primary-foreground)}
+.chip[aria-pressed="true"] .c{color:#a1a1aa}
+.count-badge{font-size:12px;font-weight:500;height:24px;padding:0 9px;border-radius:999px;background:var(--muted);display:inline-flex;align-items:center}
+
+.field-label{font-size:13px;font-weight:500;margin-bottom:6px;display:block}
+.input.mono{font-family:var(--mono);font-size:13px;max-width:420px}
+.hint{font-size:12px;color:var(--muted-foreground);margin-top:6px}
+.hint code{font-family:var(--mono);background:var(--muted);padding:1px 5px;border-radius:4px;font-size:11.5px;color:var(--foreground)}
+.preview{margin-top:14px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.preview-row{display:flex;align-items:center;gap:12px;padding:10px 14px;font-size:13.5px}
+.preview-row+.preview-row{border-top:1px solid var(--border)}
+.preview-row .pn{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.warn-inline{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--warning);font-weight:500;white-space:nowrap;border:1px solid var(--warning-border);background:var(--warning-bg);padding:2px 8px;border-radius:999px}
+.warn-inline svg{width:13px;height:13px}
+
+.progress-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.prog{border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px}
+.prog .top{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:500}
+.prog .num{font-variant-numeric:tabular-nums;color:var(--muted-foreground);font-weight:400}
+.prog .num.done{color:var(--success);font-weight:500;display:inline-flex;align-items:center;gap:4px}
+.bar{height:6px;background:var(--muted);border-radius:999px;margin-top:10px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--primary);border-radius:999px}
+.toolbar{display:flex;align-items:center;justify-content:space-between;margin:16px 0 10px}
+.check{display:inline-flex;align-items:center;gap:8px;font-size:13.5px;cursor:pointer;user-select:none}
+.cbox{width:16px;height:16px;border:1px solid var(--primary);border-radius:4px;display:grid;place-items:center;background:var(--background)}
+.check[aria-checked="true"] .cbox{background:var(--primary)}
+.cbox svg{width:12px;height:12px;stroke:#fff;stroke-width:3;opacity:0}
+.check[aria-checked="true"] .cbox svg{opacity:1}
+
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:13.5px;table-layout:fixed}
+.table-wrap{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+th{text-align:left;font-weight:500;color:var(--muted-foreground);font-size:12.5px;height:40px;padding:0 12px;border-bottom:1px solid var(--border);background:#fafafa}
+td{padding:8px 12px;vertical-align:top;border-bottom:1px solid var(--border);line-height:1.55}
+tr:last-child td{border-bottom:0}
+td.no{color:var(--muted-foreground);font-variant-numeric:tabular-nums;font-family:var(--mono);font-size:12px;padding-top:14px}
+td.src{white-space:pre-line;padding-top:13px}
+.cell{display:block;width:100%;min-height:36px;white-space:pre-line;border:1px solid transparent;border-radius:6px;padding:5px 8px;transition:border-color .12s,background .12s}
+.cell:hover{border-color:var(--input);background:var(--background)}
+.cell:focus{outline:none;border-color:var(--ring);box-shadow:0 0 0 3px rgba(24,24,27,.08);background:var(--background)}
+.cell.empty{color:#a1a1aa;border:1px dashed #d4d4d8;background:#fafafa;font-size:13px}
+tbody tr:hover td{background:#fcfcfc}
+
+.copy-row{display:flex;align-items:center;gap:12px;padding:12px 16px;border:1px solid var(--border);border-radius:var(--radius)}
+.copy-row .t{flex:1;min-width:0;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.copy-row .d{font-size:12.5px;color:var(--muted-foreground);white-space:nowrap;font-variant-numeric:tabular-nums}
+.copy-row .acts{display:flex;gap:4px}
+
+.runbar{border-top:1px solid var(--border);background:rgba(255,255,255,.92);backdrop-filter:blur(6px);flex:none}
+.runbar .in{max-width:1000px;margin:0 auto;padding:14px 32px 26px;display:flex;align-items:center;gap:20px}
+.runbar p{flex:1;font-size:13.5px;color:var(--muted-foreground)}
+.runbar p b{color:var(--foreground);font-weight:600}
+
+.label-tag{position:fixed;right:12px;bottom:5px;font-size:11px;line-height:16px;font-weight:500;color:var(--muted-foreground);background:var(--background);border:1px solid var(--border);border-radius:6px;padding:2px 8px;z-index:50;box-shadow:var(--shadow-sm)}
+
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 21v-5h5"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9l-.8-1.2A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><path d="M12.2 2h-.4a2 2 0 0 0-2 2v.2a2 2 0 0 1-1 1.7l-.4.3a2 2 0 0 1-2 0l-.2-.1a2 2 0 0 0-2.7.7l-.2.4a2 2 0 0 0 .7 2.7l.2.1a2 2 0 0 1 1 1.7v.6a2 2 0 0 1-1 1.7l-.2.1a2 2 0 0 0-.7 2.7l.2.4a2 2 0 0 0 2.7.7l.2-.1a2 2 0 0 1 2 0l.4.3a2 2 0 0 1 1 1.7v.2a2 2 0 0 0 2 2h.4a2 2 0 0 0 2-2v-.2a2 2 0 0 1 1-1.7l.4-.3a2 2 0 0 1 2 0l.2.1a2 2 0 0 0 2.7-.7l.2-.4a2 2 0 0 0-.7-2.7l-.2-.1a2 2 0 0 1-1-1.7v-.6a2 2 0 0 1 1-1.7l.2-.1a2 2 0 0 0 .7-2.7l-.2-.4a2 2 0 0 0-2.7-.7l-.2.1a2 2 0 0 1-2 0l-.4-.3a2 2 0 0 1-1-1.7V4a2 2 0 0 0-2-2Z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="m21.7 18-8-14a2 2 0 0 0-3.5 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="14" height="14" rx="2"/><path d="M4 16a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2"/></symbol>
+  <symbol id="i-languages" viewBox="0 0 24 24"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M6 3l14 9-14 9V3z"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
+</svg>
+
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo"><svg class="i"><use href="#i-languages"/></svg></span>
+      CapCut Translate
+    </div>
+    <span class="sep"></span>
+    <div class="status">
+      <span class="pill"><span class="dot"></span><b>CapCut 꺼짐</b></span>
+      <span class="pill">번역: <b style="font-family:var(--mono);font-size:11.5px">codex CLI</b></span>
+    </div>
+    <div class="right">
+      <button class="btn btn-outline btn-sm"><svg class="i"><use href="#i-refresh"/></svg>새로고침</button>
+      <button class="btn btn-outline btn-sm"><svg class="i"><use href="#i-folder"/></svg>프로젝트 폴더</button>
+      <button class="btn btn-outline btn-sm"><svg class="i"><use href="#i-settings"/></svg>설정</button>
+    </div>
+  </header>
+
+  <div class="main">
+    <aside class="sidebar">
+      <div class="side-top">
+        <div class="search">
+          <svg class="i"><use href="#i-search"/></svg>
+          <input class="input" placeholder="프로젝트 검색" aria-label="프로젝트 검색">
+          <span class="kbd">/</span>
+        </div>
+      </div>
+      <div class="side-head"><span>프로젝트 4 · 사본 5</span><span>최근 수정순</span></div>
+      <div class="list">
+        <div class="group">
+          <div class="item active">
+            <div class="thumb" style="background-image:url('assets/cover.jpg')"></div>
+            <div class="meta">
+              <div class="name">폼클렌징으로 브러시빨지 마세요!장윤주 메이크업 쌤의세척법</div>
+              <div class="sub">9월 9일 오후 08:21 · 0:46</div>
+              <div class="badges"><span class="badge">EN</span></div>
+            </div>
+          </div>
+          <div class="copy"><span class="badge">EN</span><span class="t">폼클렌징으로 브러시빨지 마세요!장윤주 메이크업 쌤의세척법 [EN]</span></div>
+        </div>
+
+        <div class="group">
+          <div class="item">
+            <div class="thumb" style="background:linear-gradient(160deg,#fde68a 0%,#f97316 45%,#1e3a8a 100%)"></div>
+            <div class="meta">
+              <div class="name">여름 캠핑 브이로그 쇼츠</div>
+              <div class="sub">8월 28일 오후 03:12 · 0:58</div>
+              <div class="badges"><span class="badge">JA</span><span class="badge">ZH</span></div>
+            </div>
+          </div>
+          <div class="copy"><span class="badge">JA</span><span class="t">여름 캠핑 브이로그 쇼츠 [JA]</span></div>
+          <div class="copy"><span class="badge">ZH</span><span class="t">여름 캠핑 브이로그 쇼츠 [ZH]</span></div>
+        </div>
+
+        <div class="group">
+          <div class="item">
+            <div class="thumb" style="background:linear-gradient(170deg,#f5f5f4 0%,#d6b896 50%,#6b4423 100%)"></div>
+            <div class="meta">
+              <div class="name">홈카페 라떼아트 3분 정리</div>
+              <div class="sub">8월 19일 오전 11:40 · 3:02</div>
+              <div class="badges"><span class="badge">EN</span><span class="badge">JA</span></div>
+            </div>
+          </div>
+          <div class="copy"><span class="badge">EN</span><span class="t">홈카페 라떼아트 3분 정리 [EN]</span></div>
+          <div class="copy"><span class="badge">JA</span><span class="t">홈카페 라떼아트 3분 정리 [JA]</span></div>
+        </div>
+
+        <div class="group">
+          <div class="item">
+            <div class="thumb" style="background:linear-gradient(165deg,#bbf7d0 0%,#4ade80 40%,#14532d 100%)"></div>
+            <div class="meta">
+              <div class="name">강아지 산책 루틴</div>
+              <div class="sub">8월 2일 오후 07:05 · 0:34</div>
+              <div class="badges"><span class="muted" style="font-size:12px">사본 없음</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <section class="detail">
+      <div class="scroll" id="scroll">
+        <div class="wrap">
+          <div class="head">
+            <div class="cover"><img src="assets/cover.jpg" alt="표지"></div>
+            <div class="head-body">
+              <div class="head-actions">
+                <div style="min-width:0">
+                  <div class="eyebrow"><span class="badge">원본</span>9월 9일 오후 08:21 · 0:46</div>
+                  <h1>폼클렌징으로 브러시빨지 마세요!장윤주 메이크업 쌤의세척법</h1>
+                </div>
+                <button class="btn btn-outline btn-sm"><svg class="i"><use href="#i-folder"/></svg>폴더 열기</button>
+              </div>
+              <div class="stats">
+                <div class="stat"><div class="k">화면 글자</div><div class="v">21</div></div>
+                <div class="stat"><div class="k">번역할 문장</div><div class="v">20</div></div>
+                <div class="stat"><div class="k">자동 자막</div><div class="v">18</div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="alert" role="note"><svg class="i"><use href="#i-alert"/></svg>글자 읽어주기(TTS) 음성 2개는 번역되지 않고 원래 언어 음성으로 남습니다.</div>
+
+          <!-- 1 -->
+          <div class="card">
+            <div class="card-h">
+              <span class="step">1</span>
+              <h2>만들 언어</h2>
+              <span class="desc">언어마다 새 프로젝트가 하나씩 만들어집니다</span>
+              <div class="tail"><span class="count-badge" id="cnt">2개 선택됨</span><button class="btn btn-ghost btn-sm" id="clear">모두 해제</button></div>
+            </div>
+            <div class="card-b">
+              <div class="chips" id="chips"></div>
+            </div>
+          </div>
+
+          <!-- 2 -->
+          <div class="card">
+            <div class="card-h">
+              <span class="step">2</span>
+              <h2>사본 이름</h2>
+              <span class="desc">CapCut 목록에 표시될 이름</span>
+            </div>
+            <div class="card-b">
+              <label class="field-label" for="nm">이름 규칙</label>
+              <input id="nm" class="input mono" value="{name} [{lang}]">
+              <div class="hint"><code>{name}</code> 원본 이름 · <code>{lang}</code> 언어 코드</div>
+              <div class="preview">
+                <div class="preview-row"><span class="badge">EN</span><span class="pn">폼클렌징으로 브러시빨지 마세요!장윤주 메이크업 쌤의세척법 [EN]</span><span class="warn-inline"><svg class="i"><use href="#i-alert"/></svg>이미 있음 — 하나 더 만듭니다</span></div>
+                <div class="preview-row"><span class="badge">JA</span><span class="pn">폼클렌징으로 브러시빨지 마세요!장윤주 메이크업 쌤의세척법 [JA]</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3 -->
+          <div class="card">
+            <div class="card-h">
+              <span class="step">3</span>
+              <h2>번역 확인·수정</h2>
+              <span class="desc">칸을 눌러 바로 고칠 수 있습니다</span>
+            </div>
+            <div class="card-b">
+              <div class="progress-grid">
+                <div class="prog"><div class="top">English <span class="num done"><svg class="i" style="width:14px;height:14px"><use href="#i-check"/></svg>20/20 완료</span></div><div class="bar"><i style="width:100%;background:var(--success)"></i></div></div>
+                <div class="prog"><div class="top">日本語 <span class="num">6/20</span></div><div class="bar"><i style="width:30%"></i></div></div>
+              </div>
+              <div class="toolbar">
+                <span class="check" role="checkbox" aria-checked="false" tabindex="0" id="only"><span class="cbox"><svg class="i"><use href="#i-check"/></svg></span>번역 안 된 것만</span>
+                <button class="btn btn-outline btn-sm"><svg class="i"><use href="#i-eye"/></svg>번역 미리보기</button>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <colgroup><col style="width:48px"><col style="width:27%"><col><col style="width:28%"></colgroup>
+                  <thead><tr><th>#</th><th>원문</th><th>English</th><th>日本語</th></tr></thead>
+                  <tbody id="rows"></tbody>
+                </table>
+              </div>
+              <div class="hint" style="margin-top:10px">6 / 20개 문장 표시 중</div>
+            </div>
+          </div>
+
+          <!-- copies -->
+          <div class="card">
+            <div class="card-h">
+              <h2>이 프로젝트의 사본</h2>
+              <span class="desc">1개</span>
+            </div>
+            <div class="card-b">
+              <div class="copy-row">
+                <span class="badge solid">EN</span>
+                <span class="t">폼클렌징으로 브러시빨지 마세요!장윤주 메이크업 쌤의세척법 [EN]</span>
+                <span class="d">10월 3일 오전 10:53</span>
+                <div class="acts">
+                  <button class="btn btn-ghost btn-sm"><svg class="i"><use href="#i-eye"/></svg>보기</button>
+                  <button class="btn btn-ghost btn-sm"><svg class="i"><use href="#i-folder"/></svg>폴더</button>
+                  <button class="btn btn-ghost btn-sm btn-danger-ghost"><svg class="i"><use href="#i-trash"/></svg>삭제</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="runbar">
+        <div class="in">
+          <p>원본은 그대로 두고 <b id="n2">2개</b>의 새 프로젝트를 만듭니다. 번역 안 된 문장은 자동으로 번역합니다.</p>
+          <button class="btn btn-primary btn-lg" id="run"><svg class="i"><use href="#i-copy"/></svg><span id="runlbl">2개 언어로 복제 만들기</span></button>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+<div class="label-tag">시안 A · shadcn</div>
+
+<script>
+const LANGS=[["English","EN",1],["日本語","JA",1],["简体中文","ZH"],["繁體中文","ZH-TW"],["Español","ES"],["Français","FR"],["Deutsch","DE"],["Português","PT"],["Русский","RU"],["Tiếng Việt","VI"],["Indonesia","ID"],["ไทย","TH"],["العربية","AR"],["हिन्दी","HI"]];
+const chips=document.getElementById('chips');
+LANGS.forEach(([n,c,on])=>{const b=document.createElement('button');b.className='chip';b.setAttribute('aria-pressed',on?'true':'false');b.innerHTML=`<span class="n">${n}</span><span class="c">${c}</span>`;b.onclick=()=>{b.setAttribute('aria-pressed',b.getAttribute('aria-pressed')==='true'?'false':'true');upd()};chips.appendChild(b)});
+function upd(){const k=chips.querySelectorAll('[aria-pressed="true"]').length;document.getElementById('cnt').textContent=k+'개 선택됨';document.getElementById('n2').textContent=k+'개';document.getElementById('runlbl').textContent=k?k+'개 언어로 복제 만들기':'언어를 선택하세요';document.getElementById('run').disabled=!k;document.getElementById('run').style.opacity=k?1:.5}
+document.getElementById('clear').onclick=()=>{chips.querySelectorAll('.chip').forEach(b=>b.setAttribute('aria-pressed','false'));upd()};
+const ROWS=[
+ ["폼클렌징으로 브러시\n빨지 마세요!\n장윤주 메이크업 쌤의\n세척법","Don’t wash your brushes\nwith face wash!\nJang Yoon-ju’s makeup artist\nshares her cleaning hack","洗顔料でブラシを\n洗わないで！"],
+ ["🍒 체리돌","🍒 Cherry-dol","🍒 チェリードール"],
+ ["박창수\n오늘자 송도 도로에서 벌어진 일.\n밤 10시 신호 대기 중인 오토바이.","Park Chang-su\nWhat happened on a Songdo road today.\nA motorcycle waiting at a red light at 10 PM.",""],
+ ["클렌징으로 하면 잘 안 되더라","Face wash never really gets them clean",""],
+ ["그 비누 있어요","You know that soap?","あの石けん、あるよ"],
+ ["아이 깨끗해 비누로","I use Ai-Kkaekkeuthae hand soap",""]];
+const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const cell=v=>v?`<div class="cell" contenteditable="true">${esc(v)}</div>`:`<div class="cell empty" contenteditable="true" data-ph="1">번역 전</div>`;
+document.getElementById('rows').innerHTML=ROWS.map((r,i)=>`<tr data-done="${r[2]?1:0}"><td class="no">${i+1}</td><td class="src">${esc(r[0])}</td><td>${cell(r[1])}</td><td>${cell(r[2])}</td></tr>`).join('');
+document.querySelectorAll('.cell.empty').forEach(c=>c.addEventListener('focus',()=>{if(c.dataset.ph){c.textContent='';c.classList.remove('empty');delete c.dataset.ph}}));
+const only=document.getElementById('only');
+const tog=()=>{const on=only.getAttribute('aria-checked')!=='true';only.setAttribute('aria-checked',on);document.querySelectorAll('#rows tr').forEach(tr=>tr.style.display=on&&tr.dataset.done==='1'?'none':'')};
+only.onclick=tog;only.onkeydown=e=>{if(e.key===' '||e.key==='Enter'){e.preventDefault();tog()}};
+</script>
+</body>
+</html>

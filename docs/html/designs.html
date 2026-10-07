@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>디자인 시안 비교</title>
+<style>
+  :root { --bg:#f3f4f6; --panel:#fff; --ink:#111827; --muted:#6b7280; --line:#e5e7eb; --accent:#4353ff;
+    font-family:"Pretendard Variable",Pretendard,"Apple SD Gothic Neo","Malgun Gothic",sans-serif; color:var(--ink); }
+  @media (prefers-color-scheme: dark){ :root{ --bg:#0f1013; --panel:#17181c; --ink:#eceef2; --muted:#8b909c; --line:#2a2c33; --accent:#6573ff; } }
+  * { box-sizing:border-box; } html,body{height:100%;margin:0;background:var(--bg);}
+  body{display:flex;flex-direction:column;}
+  header{display:flex;align-items:center;gap:8px;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap;}
+  h1{font-size:15px;margin:0 12px 0 0;}
+  button{font:inherit;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:7px 12px;cursor:pointer;font-weight:600;}
+  button.on{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .sp{flex:1;} a{color:var(--accent);font-weight:600;font-size:13px;text-decoration:none;}
+  .hint{font-size:12px;color:var(--muted);}
+  main{flex:1;min-height:0;}
+  iframe.one{width:100%;height:100%;border:0;display:block;background:#fff;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(440px,1fr));gap:18px;padding:18px;align-content:start;align-items:start;overflow:auto;height:100%;}
+  .tile{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;cursor:pointer;}
+  .tile .frame{position:relative;width:100%;aspect-ratio:1400/900;overflow:hidden;}
+  .tile iframe{position:absolute;top:0;left:0;width:1400px;height:900px;border:0;transform-origin:0 0;pointer-events:none;}
+  .tile .cap{padding:10px 14px;font-weight:700;display:flex;justify-content:space-between;}
+</style>
+</head>
+<body>
+<header>
+  <h1>CapCut Translate · 디자인 시안</h1>
+  <button data-v="grid" class="on">전체 보기</button>
+  <span id="tabs"></span>
+  <span class="sp"></span>
+  <span class="hint">← → 키로 넘기기</span>
+  <a id="newwin" href="#" target="_blank" hidden>새 창으로 열기 ↗</a>
+</header>
+<main id="main"></main>
+<script>
+const D = [
+  ["A", "shadcn", "design-a-shadcn.html"],
+  ["B", "premium", "design-b-premium.html"],
+  ["C", "bento", "design-c-bento.html"],
+  ["D", "glassmorphism", "design-d-glass.html"],
+  ["E", "neobrutalism", "design-e-neobrutalism.html"],
+];
+const tabs = document.getElementById("tabs"), main = document.getElementById("main"), nw = document.getElementById("newwin");
+tabs.innerHTML = D.map(([k, n], i) => `<button data-v="${i}">${k} · ${n}</button>`).join(" ");
+let view = "grid";
+function show(v) {
+  view = v;
+  document.querySelectorAll("header button").forEach((b) => b.classList.toggle("on", b.dataset.v === String(v)));
+  if (v === "grid") {
+    nw.hidden = true;
+    main.innerHTML = `<div class="grid">${D.map(([k, n, f], i) =>
+      `<div class="tile" data-i="${i}"><div class="frame"><iframe src="${f}" loading="lazy" tabindex="-1"></iframe></div><div class="cap"><span>시안 ${k}</span><span class="hint">${n}</span></div></div>`).join("")}</div>`;
+    fit();
+  } else {
+    const f = D[v][2]; nw.hidden = false; nw.href = f;
+    main.innerHTML = `<iframe class="one" src="${f}"></iframe>`;
+  }
+}
+function fit() {
+  document.querySelectorAll(".tile .frame").forEach((fr) => { fr.firstChild.style.transform = `scale(${fr.clientWidth / 1400})`; });
+}
+addEventListener("resize", fit);
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("header button"); if (b) return show(b.dataset.v === "grid" ? "grid" : +b.dataset.v);
+  const t = e.target.closest(".tile"); if (t) show(+t.dataset.i);
+});
+addEventListener("keydown", (e) => {
+  if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+  const cur = view === "grid" ? -1 : view, d = e.key === "ArrowRight" ? 1 : -1;
+  show(((cur + d) % D.length + D.length) % D.length);
+});
+show("grid");
+</script>
+</body>
+</html>
