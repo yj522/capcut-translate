@@ -3,7 +3,7 @@
 실측(CapCut 9.4, Windows) 폴더 구성:
   <root>/root_meta_info.json          모든 프로젝트 목록(all_draft_store) — CapCut 이 종료 때 다시 씀
   <root>/<이름>/draft_meta_info.json  draft_id · draft_name · draft_fold_path · draft_root_path
-  <root>/<이름>/draft_content.json    본문. .bak · template-2.tmp 도 같은 본문
+  <root>/<이름>/draft_content.json    본문. .bak · template-2.tmp 도 같은 본문 (Mac 은 draft_info.json)
   <root>/<이름>/Timelines/<tid>/      같은 본문 3벌 + attachment/patch/mini_draft.json(클라우드 동기 캐시)
 폴더 안 소재 경로는 '##_draftpath_placeholder_<uuid>_##/...' 자리표시자라 복사해도 안 고친다.
 폴더 절대경로·이름이 박힌 곳은 draft_meta_info.json · root_meta_info.json · mini_draft.json 뿐.
@@ -24,8 +24,10 @@ from pathlib import Path
 IS_WIN = sys.platform.startswith("win")
 IS_MAC = sys.platform == "darwin"
 
-# 본문(draft_content) 사본들 — 루트와 Timelines/<tid>/ 양쪽에 있다.
-CONTENT_FILES = ("draft_content.json", "draft_content.json.bak", "template-2.tmp", "template.tmp")
+# 본문 이름 — Windows 는 draft_content.json, Mac 은 draft_info.json.
+MAIN_NAMES = ("draft_content.json", "draft_info.json")
+# 본문 사본들 — 루트와 Timelines/<tid>/ 양쪽에 있다.
+CONTENT_FILES = MAIN_NAMES + ("draft_content.json.bak", "draft_info.json.bak", "template-2.tmp", "template.tmp")
 
 
 def nfc(s: str) -> str:
@@ -171,19 +173,26 @@ def _open_folder_win(p: Path) -> bool:
 
 
 # ─── 목록 ──────────────────────────────────────────────────────────────────
+def _main_in(d: Path) -> Path | None:
+    return next((d / n for n in MAIN_NAMES if (d / n).is_file()), None)
+
+
 def main_content_path(folder: Path) -> Path:
-    """CapCut 9.x 는 Timelines/<main_timeline_id>/draft_content.json 이 주 본문.
-    없으면(옛 버전) 루트 draft_content.json."""
+    """CapCut 9.x 는 Timelines/<main_timeline_id>/<본문> 이 주 본문.
+    없으면(옛 버전) 루트의 본문. 본문 이름은 MAIN_NAMES(Windows·Mac 이 다르다)."""
     pj = folder / "Timelines" / "project.json"
     if pj.is_file():
         try:
             tid = read_json(pj).get("main_timeline_id")
-            p = folder / "Timelines" / str(tid) / "draft_content.json"
-            if tid and p.is_file():
+            p = _main_in(folder / "Timelines" / str(tid)) if tid else None
+            if p:
                 return p
         except Exception:
             pass
-    return folder / "draft_content.json"
+    p = _main_in(folder)
+    if not p:
+        raise FileNotFoundError(f"프로젝트 본문({' · '.join(MAIN_NAMES)})이 없습니다: {folder}")
+    return p
 
 
 def all_content_files(folder: Path) -> list[Path]:
@@ -337,11 +346,12 @@ def register(root: Path, dest: Path, meta: dict, old_fold: str) -> None:
     template = next((e for e in store if e.get("draft_fold_path") == old_fold), None)
     entry = dict(template) if template else {}
     fold = fwd(dest)
+    json_name = (_main_in(dest) or Path(MAIN_NAMES[0])).name
     entry.update({
         "draft_cover": f"{fold}\\draft_cover.jpg" if IS_WIN else f"{fold}/draft_cover.jpg",
         "draft_fold_path": fold,
         "draft_id": meta["draft_id"],
-        "draft_json_file": f"{fold}\\draft_content.json" if IS_WIN else f"{fold}/draft_content.json",
+        "draft_json_file": f"{fold}\\{json_name}" if IS_WIN else f"{fold}/{json_name}",
         "draft_name": meta["draft_name"],
         "draft_root_path": fwd(root),
         "tm_draft_create": meta["tm_draft_create"],

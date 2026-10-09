@@ -43,14 +43,14 @@ def make_draft():
     }
 
 
-def make_root(tmp: Path, name="원본 프로젝트") -> Path:
+def make_root(tmp: Path, name="원본 프로젝트", main="draft_content.json") -> Path:
     root = tmp / "com.lveditor.draft"
     proj = root / name
     tl = proj / "Timelines" / TID
     (tl / "attachment" / "patch").mkdir(parents=True)
     draft = make_draft()
     for d in (proj, tl):
-        for f in ("draft_content.json", "draft_content.json.bak", "template-2.tmp"):
+        for f in (main, main + ".bak", "template-2.tmp"):
             (d / f).write_text(json.dumps(draft, ensure_ascii=False), encoding="utf-8")
     (proj / "Timelines" / "project.json").write_text(json.dumps({"main_timeline_id": TID}), encoding="utf-8")
     (tl / "attachment" / "patch" / "mini_draft.json").write_text(f'{{"p":"{drafts.fwd(proj)}"}}', encoding="utf-8")
@@ -340,6 +340,27 @@ class FontTest(unittest.TestCase):
 
 
 class CloneTest(unittest.TestCase):
+    def test_mac_draft_info_is_read_and_translated(self):
+        """Mac CapCut 은 본문이 draft_info.json — 목록·본문 찾기·복제가 모두 그 이름으로 돼야 한다."""
+        with tempfile.TemporaryDirectory() as td:
+            root = make_root(Path(td), main="draft_info.json")
+            src = root / "원본 프로젝트"
+            self.assertEqual(drafts.main_content_path(src), src / "Timelines" / TID / "draft_info.json")
+            res = drafts.clone(root, src, "원본 프로젝트 [EN]", transform=lambda d: localize.apply(d, MAPPING))
+            dest = root / res["folder"]
+            files = drafts.all_content_files(dest)
+            self.assertEqual(len(files), 6)
+            for p in files:
+                self.assertEqual(json.loads(drafts.read_json(p)["materials"]["texts"][1]["content"])["text"], "🍒Cherrydol")
+            rm = drafts.read_json(root / "root_meta_info.json")
+            self.assertTrue(rm["all_draft_store"][0]["draft_json_file"].endswith("draft_info.json"))
+
+    def test_missing_main_content_says_which_files(self):
+        with tempfile.TemporaryDirectory() as td:
+            with self.assertRaises(FileNotFoundError) as cm:
+                drafts.main_content_path(Path(td))
+            self.assertIn("draft_info.json", str(cm.exception))
+
     def test_clone_registers_new_project_and_keeps_original(self):
         with tempfile.TemporaryDirectory() as td:
             root = make_root(Path(td))
